@@ -1,0 +1,44 @@
+#pragma once
+
+#include "CoreMinimal.h"
+
+#include <osg/ref_ptr>
+#include <osg/observer_ptr>
+
+#include <vector>
+
+class Geometry;
+class PagedLOD;
+
+class Model
+{
+public:
+	class ViewUpdateRequest :public osg::Referenced
+	{
+	public:
+		bool operator==(const ViewUpdateRequest& rhs)	const;
+		bool operator<  (const ViewUpdateRequest& rhs)	const;
+	public:
+		float pixelSize;
+		unsigned int requestTimes;
+		osg::ref_ptr<Geometry> _requester;
+		bool _bRequestHeigher;
+		std::vector<osg::ref_ptr<Geometry>> _addToViewGeometries;
+		std::vector<osg::ref_ptr<Geometry>> _deleteFromViewGeometries;
+	};
+
+	Model(std::string folderPath);
+	~Model();
+
+public:
+	void UpdateGeometries();
+
+	std::string _folderPath;
+	PagedLOD* _root;
+
+	std::vector<Geometry*> _addToViewList;
+	std::vector<Geometry*> _removeFromViewList;
+	std::set<Geometry*> _visibleGeometries;
+
+	int64 _frameNumberLastClean;
+};

@@ -1,0 +1,28 @@
+#pragma once
+
+#include "CoreMinimal.h"
+
+#include <osg/ref_ptr>
+#include <osg/Node>
+
+#include <queue>
+#include <unordered_map>
+
+class PagedLOD;
+class Geometry;
+class Model;
+
+/*
+*
+*/
+class DataManageThreadPool
+{
+public:
+	DataManageThreadPool* GetInstance();
+	void Reload(PagedLOD* plod, osg::Node* node);
+	void AddChild(PagedLOD* plod, int32 index, osg::Node* node);
+	void Clean(Model* model);
+
+private:
+
+};

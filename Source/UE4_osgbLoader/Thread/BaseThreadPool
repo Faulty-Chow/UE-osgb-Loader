@@ -1,0 +1,31 @@
+#pragma once
+#include "../UE4_osgbLoader.h"
+#include "CoreMinimal.h"
+#include "Containers/Queue.h"
+#include "GenericPlatform/GenericPlatformAffinity.h"
+
+#include <atomic>
+#include <mutex>
+
+class BaseAsyncTask;
+class BaseThread;
+
+class BaseThreadPool
+{
+public:
+	virtual ~BaseThreadPool();
+	virtual void AddQueuedTask(BaseAsyncTask* task);
+	virtual BaseAsyncTask* ReturnToPool(BaseThread* thread);
+	virtual bool Create();
+	virtual void Destroy();
+
+private:
+	uint32 _poolSize;
+	FString _poolName;
+	bool _bDone;
+
+	TArray<BaseThread*> _threadPool;
+	TQueue<BaseThread*> _threadQueue;	// free-lock
+	TQueue<BaseAsyncTask*> _taskQueue;
+	FCriticalSection* _criticalSection;
+};

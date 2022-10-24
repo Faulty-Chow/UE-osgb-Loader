@@ -1,0 +1,132 @@
+#pragma once
+
+#include "CoreMinimal.h"
+#include "../UE4_osgbLoader.h"
+
+#include <set>
+#include <list>
+#include <vector>
+#include <atomic>
+#include <mutex>
+#include <functional>
+
+#include <osg/ref_ptr>
+
+class Model;
+class Geometry;
+class PagedLOD;
+class UpdateThread;
+class ReadThread;
+class StructureThread;
+class CleanThread;
+class URuntimeMeshSubsystem;
+class AMyRuntimeMeshActor;
+
+struct FileReadTask
+{
+	FileReadTask(Geometry* geometry, std::string filePath) :
+		_frameNumberLastRequest(-1), _precursor(geometry),
+		_filePath(filePath), _bAllowLoad(true), _bReload(false) {}
+	int64 _frameNumberLastRequest;
+	Geometry* _precursor;
+	std::string _filePath;
+	bool _bAllowLoad;
+	bool _bReload;
+};
+
+class OsgbLoaderThreadPool
+{
+public:
+	static OsgbLoaderThreadPool* GetInstance();
+	UWorld* GetWorld();
+	UMaterialInterface* GetDefaultMaterial();
+	AMyRuntimeMeshActor* GetRuntimeMeshActor();
+
+	void WaitForStart();
+	void UpdateView();
+	void CleanView();
+
+	void DrawUpNextFrame();
+	void ReadNodeFile(FileReadTask* fileReadRequest);
+	void FinishStructureAndMountToModel(PagedLOD* plod);
+	void CleanModel(Model* model);
+
+	bool ReturnToPool(UpdateThread* pThread);
+	bool ReturnToPool(ReadThread* pThread);
+	bool ReturnToPool(StructureThread* pThread);
+	bool ReturnToPool(CleanThread* pThread);
+
+private:
+	friend class URuntimeMeshSubsystem;
+	OsgbLoaderThreadPool(URuntimeMeshSubsystem* runtimeMeshSubsystem);
+	~OsgbLoaderThreadPool();
+#ifdef _MSVC_LANG
+#if _MSVC_LANG >= 201703L		// C++17
+	static inline OsgbLoaderThreadPool* Instance = nullptr;
+#else
+	static OsgbLoaderThreadPool* Instance;
+#endif
+#endif
+	
+	void LoadModels();
+	bool Create(int32 numUpdateThreads = 8, int32 numReadThreads = 4, int32 numStructureThreads = 1, int32 numCleanThreads = 4);
+	void Destroy();
+	URuntimeMeshSubsystem* _runtimeMeshSubsystem;
+
+private:
+	/*
+	Thread priority:
+		UpdateThread = ReadThread > StructureThread > CleanThread
+	*/
+	int32 _numUpdateThreads /*= 8*/;
+	std::vector<UpdateThread*> _updateThreads;
+	int32 _numReadThreads/* = 2*/;
+	std::vector<ReadThread*> _readThreads;
+	int32 _numStructureThreads /*= 1*/;
+	std::vector<StructureThread*> _structureThread;
+	int32 _numCleanThreads /*= 4*/;
+	std::vector<CleanThread*> _cleanThreads;
+private:	// Thread Pool Resource
+	std::mutex _initializeMutex;
+	std::condition_variable _initializeCondition;
+	// Public:
+	std::vector<Model*> _models;
+	// UpdateThread
+	std::mutex _updateMutex;
+	int32 _updateModelIndex;
+	std::atomic<int32> _drawUpComplete;
+	// ReadThread
+	struct FileReadTaskQueue
+	{
+		static bool CompareFileReadTask(FileReadTask* lhs, FileReadTask* rhs)
+		{
+			if (lhs->_precursor == rhs->_precursor)
+				return false;
+			else
+				return lhs->_frameNumberLastRequest < rhs->_frameNumberLastRequest;
+		};
+		FileReadTaskQueue(int32 maxSize = 200)
+		{
+			func_compare = CompareFileReadTask;
+			_maxSize = maxSize;
+			_requestOnce = std::set<FileReadTask*, decltype(func_compare)>(func_compare);
+			_requestRepeatedly = std::set<FileReadTask*, decltype(func_compare)>(func_compare);
+		}
+		std::function<bool(FileReadTask*, FileReadTask*)> func_compare;
+		int32 _maxSize;
+		std::mutex _requestMutex;
+		std::set<FileReadTask*, decltype(func_compare)> _requestOnce;
+		std::set<FileReadTask*, decltype(func_compare)> _requestRepeatedly;
+
+		void Enqueue(FileReadTask*& request);
+		bool Dequeue(FileReadTask*& request);
+		void Clear();
+	} _fileReadRequestQueue;
+
+	// StructureThread
+	TQueue<PagedLOD*> _waitToMountPlods;	// lock-free
+	// CleanThread
+	std::mutex _cleanMutex;
+	std::list<Model*> _waitForCleanModels;
+};
+

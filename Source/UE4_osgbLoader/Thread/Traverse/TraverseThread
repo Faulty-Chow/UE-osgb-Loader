@@ -1,0 +1,28 @@
+#pragma once
+
+#include "CoreMinimal.h"
+
+#include <OpenThreads/Thread>
+#include <OpenThreads/Atomic>
+#include <OpenThreads/Condition>
+#include <OpenThreads/Mutex>
+
+#include <osg/ref_ptr>
+
+class Model;
+
+class TraverseThread :public OpenThreads::Thread
+{
+public:
+	virtual void run() override;
+
+private:
+	OpenThreads::Condition _frameTick;
+	OpenThreads::Mutex _frameMutex;
+	OpenThreads::Atomic _frameCompelete;
+
+	OpenThreads::Atomic _bDone;
+
+
+	osg::ref_ptr<Model>& _model;
+};

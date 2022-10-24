@@ -1,0 +1,38 @@
+#pragma once
+#include "../UE4_osgbLoader.h"
+#include "CoreMinimal.h"
+
+class BaseThreadPool;
+class BaseAsyncTask;
+
+class BaseThread : public FRunnable
+{
+public:
+	BaseThread(BaseThreadPool* threadPool, FString threadName = "BaseThread");
+	virtual ~BaseThread();
+
+public:
+	virtual bool Create(uint32 stackSize = (32 * 1024), EThreadPriority threadPriority = TPri_Normal);
+	virtual bool ExecuteTask(BaseAsyncTask* task);
+	virtual void Kill();
+
+	__forceinline bool IsDone() { return _bDone; }
+	__forceinline bool IsActive() { return _bActive; }
+
+private:
+	virtual bool Init() override { return FRunnable::Init(); }
+	virtual uint32 Run() override;
+	virtual void Stop() override;
+	virtual void Exit() override { FRunnable::Exit(); }
+
+protected:
+	int32  _threadID;
+	FString _threadName;
+	FRunnableThread* _pThread;
+
+	volatile bool _bDone;
+	volatile bool _bActive;
+
+	BaseThreadPool* _pThreadPool;
+	BaseAsyncTask* _pTask;
+};

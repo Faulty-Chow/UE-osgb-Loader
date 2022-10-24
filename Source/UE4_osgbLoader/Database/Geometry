@@ -1,0 +1,107 @@
+#pragma once
+
+#include "CoreMinimal.h"
+#include "../UE4_osgbLoader.h"
+
+#include <vector>
+
+#include <osg/Node>
+#include <osg/observer_ptr>
+#include <osg/BoundingSphere>
+
+#if USE_RuntimeMeshComponent
+#include "RuntimeMeshCore.h"
+#else
+#include "ProceduralMeshComponent.h"
+#endif
+
+struct FRuntimeMeshTangent;
+class UTexture2D;
+class UMaterialInstanceDynamic;
+class PagedLOD;
+struct FileReadTask;
+
+struct MeshSection
+{
+	MeshSection()
+	{
+		_sectionID = SectionID++;
+		_vertices = new TArray<FVector>;
+		_triangles = new TArray<int32>;
+		_normals = new TArray<FVector>;
+		_vertexColors = new TArray<FColor>;
+		_UV = new TArray<FVector2D>;
+#if USE_RuntimeMeshComponent
+		_tangent = new TArray<FRuntimeMeshTangent>;
+#else
+		_tangent = new TArray<FProcMeshTangent>;
+#endif
+		
+	}
+	~MeshSection()
+	{
+		_vertices->Empty();
+		_triangles->Empty();
+		_normals->Empty();
+		_vertexColors->Empty();
+		_UV->Empty();
+		_tangent->Empty();
+
+		if (_textureData != nullptr)
+		{
+			delete _textureData;
+			_textureData = nullptr;
+		}
+		/*_material = nullptr;
+		_texture = nullptr;*/
+	}
+
+	int32 _sectionID;
+	TArray<FVector>* _vertices;
+	TArray<int32>* _triangles;
+	TArray<FVector>* _normals;
+	TArray<FColor>* _vertexColors;
+	TArray<FVector2D>* _UV;
+#if USE_RuntimeMeshComponent
+	TArray<FRuntimeMeshTangent>* _tangent;
+#else
+	TArray<FProcMeshTangent>* _tangent;
+#endif
+
+	void* _textureData;
+	int32 _rows, _cols;
+	UTexture2D* _texture;
+	UMaterialInstanceDynamic* _material;
+
+private:
+	
+#ifdef _MSVC_LANG
+#if _MSVC_LANG >= 201703L		// C++17
+	static inline int32 SectionID = 0;
+#else
+	static int32 SectionID;
+#endif
+#endif
+};
+
+class Geometry
+{
+public:
+	Geometry(PagedLOD* owner, int32 index, float threshold, osg::BoundingSphere boundingSphere,
+		std::vector<MeshSection*>* meshSections, std::string successorFilename);
+	~Geometry();
+
+	bool operator >>(const Geometry& rhs) const;
+	bool operator <<(const Geometry& rhs) const;
+
+	void LoadSuccessor();
+
+public:
+	PagedLOD* _owner;
+	int32 _index;
+	float _threshold;
+	osg::BoundingSphere _boundingSphere;
+	FileReadTask* _fileReadRequest;
+
+	std::vector<MeshSection*>* _meshSections;
+};

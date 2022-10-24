@@ -1,0 +1,51 @@
+#pragma once
+#include "../../UE4_osgbLoader.h"
+#include "../BaseAsyncTask"
+#include "CoreMinimal.h"
+
+#include <osg/Node>
+
+class PagedLOD;
+class Model;
+/*
+Update PagedLOD State:
+Suppress	<=>	Active
+Active		=>		Sleep
+Sleep		=>		Release
+*/
+class DataCleanTask :public BaseAsyncTask
+{
+public:
+	virtual void Abandon() override;
+	virtual int32 Execute() override;
+	virtual void SaveResult() override;
+
+private:
+	void DFS(PagedLOD* plod);
+
+private:
+	PagedLOD* _root;
+	int64 _frameNumber;
+	int64 _frameToClean;
+};
+
+class SetTextureAndMaterial :public BaseAsyncTask
+{
+public:
+	virtual void Abandon() override {}
+	virtual int32 Execute() override;
+	virtual void SaveResult() override;
+
+private:
+	PagedLOD* _plod;
+};
+
+class PreLoadTask :public BaseAsyncTask
+{
+public:
+	virtual void Abandon() override {}
+	virtual int32 Execute() override;
+	virtual void SaveResult() override;
+private:
+	Model* _model;
+ };

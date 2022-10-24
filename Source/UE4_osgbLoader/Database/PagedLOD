@@ -1,0 +1,51 @@
+#pragma once
+
+#include "CoreMinimal.h"
+
+#include <osg/ref_ptr>
+#include <osg/observer_ptr>
+#include <osg/BoundingSphere>
+
+#include <vector>
+#include <string>
+
+class Model;
+class Geometry;
+
+class PagedLOD
+{
+public:
+	PagedLOD(Model* owner);
+	PagedLOD(Geometry* precursor);
+	~PagedLOD();
+
+	void Release();
+	void Reload();
+
+	void AddChild(uint32 index, PagedLOD* child);
+	std::string GetName();
+
+	bool operator <<(const Geometry& rhs) const;
+
+	void MakeGeometryVisible(int32 index);
+	void MakeGeometryHide(int32 index);
+
+public:
+	/*__forceinline PagedLOD* GetParent(uint32 index) const;
+	__forceinline uint32 GetIndex() const;
+	__forceinline PagedLOD* GetChild(uint32 index) const;
+	__forceinline uint32 GetChildIndex(PagedLOD* child) const;
+	__forceinline Geometry* GetGeometry(uint32 index) const;
+	__forceinline uint32 GetGeometryIndex(Geometry* geometry) const;*/
+	Model* _owner;
+	PagedLOD* _parent;
+	int32 _index;
+	std::string _name;
+	std::vector<PagedLOD*> _children;
+	std::vector<Geometry*> _geometries;
+
+	int32 _bActive;
+	bool _bNeedReload;
+
+	int64 _lastFrameUsed;
+};

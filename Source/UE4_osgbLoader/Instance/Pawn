@@ -1,0 +1,43 @@
+#pragma once
+
+#include "CoreMinimal.h"
+#include "SceneView.h"
+#include "../UE4_osgbLoader.h"
+
+#include <atomic>
+
+#include <osg/BoundingSphere>
+
+class Pawn	// free-lock, only GameThread can write
+{
+	friend class URuntimeMeshSubsystem;
+public:
+	static Pawn* GetCurrentPawn()
+	{
+		static Pawn* pawn = new Pawn;
+		if (pawn == nullptr)
+			pawn = new Pawn;
+		return pawn;
+	}
+
+	__forceinline bool IsVaild() { return _bVaild.load(); }
+	__forceinline int64 GetFrameNumber() { return _frameNumber; }
+	float GetBoundPixelSizeOnView(const osg::BoundingSphere& boundingSphere, bool bABS = true) const;
+	bool IsBoundOnView(const osg::BoundingSphere& boundingSphere) const;
+	float DistanceToViewpoint(const osg::BoundingSphere& boundingSphere) const;
+
+private:
+	Pawn() :
+		_bVaild(false) {}
+	Pawn(const Pawn&) = delete;
+	Pawn(Pawn&&) = delete;
+	Pawn operator = (const Pawn&) = delete;
+	Pawn operator = (const Pawn&) const = delete;
+	void Update(UWorld* _worldContext);
+
+private:
+	std::atomic_bool _bVaild;
+	FDateTime _timeStamp;
+	int64 _frameNumber;
+	FSceneViewProjectionData _projectionData;
+};

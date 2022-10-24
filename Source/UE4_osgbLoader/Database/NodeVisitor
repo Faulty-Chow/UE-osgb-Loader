@@ -1,0 +1,50 @@
+#pragma once
+
+#include "CoreMinimal.h"
+
+#include <osg/NodeVisitor>
+#include <osg/BoundingSphere>
+
+template<typename T>
+void Swap_ptr(T* p1, T* p2)
+{
+	T p = *p1;
+	*p1 = *p2;
+	*p2 = p;
+}
+
+class PagedLOD;
+class PagedLODVisitor :public osg::NodeVisitor
+{
+public:
+	PagedLODVisitor(PagedLOD* newPagedLOD, bool bReload = false);
+	virtual void apply(osg::PagedLOD& plod) override;
+
+private:
+	PagedLOD* _plod;
+	bool _bReload;
+	int32 _index;
+};
+
+
+struct MeshSection;
+class GeometryVisitor :public osg::NodeVisitor
+{
+public:
+	class Triangle
+	{
+	public:
+		Triangle() = default;
+		void operator()(const unsigned int& v1, const unsigned int& v2, const unsigned int& v3);
+		MeshSection* _meshSection;
+	};
+
+	osg::BoundingSphere _boundingSphere;
+	std::vector<MeshSection*>* _meshSections;
+
+public:
+	GeometryVisitor();
+	~GeometryVisitor() = default;
+	virtual void apply(osg::Geode& geode) override;
+	void ReloadClean();
+};
