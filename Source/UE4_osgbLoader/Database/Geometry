@@ -76,7 +76,7 @@ struct MeshSection
 private:
 	
 #ifdef _MSVC_LANG
-#if _MSVC_LANG >= 201703L		// C++17
+#if _MSVC_LANG >= 201703L	
 	static inline int32 SectionID = 0;
 #else
 	static int32 SectionID;
