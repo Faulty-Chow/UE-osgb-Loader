@@ -21,6 +21,7 @@ class StructureThread;
 class CleanThread;
 class URuntimeMeshSubsystem;
 class AMyRuntimeMeshActor;
+class FODSCManager;
 
 struct FileReadTask
 {
@@ -41,6 +42,7 @@ public:
 	UWorld* GetWorld();
 	UMaterialInterface* GetDefaultMaterial();
 	AMyRuntimeMeshActor* GetRuntimeMeshActor();
+	FODSCManager* GetODSCManager() { return _pODSCManager; }
 
 	void WaitForStart();
 	void UpdateView();
@@ -128,5 +130,7 @@ private:	// Thread Pool Resource
 	// CleanThread
 	std::mutex _cleanMutex;
 	std::list<Model*> _waitForCleanModels;
+
+	FODSCManager* _pODSCManager;
 };
 

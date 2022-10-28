@@ -1,0 +1,23 @@
+#pragma once
+#include "BaseThread"
+
+class DataCleanThread :public BaseThread
+{
+public:
+	virtual bool SetTask(void* task) override;
+
+private:
+	virtual void ExecuteTask() override;
+	void DFS_CleanLODTree(class PagedLOD* plod);
+	void CleanGeometry(class Geometry* geometry){}
+
+
+	class Model* _task;
+	int64 _frameNumber;
+	int64 _cleanFrameout;
+};
+
+class DataCleanManager
+{
+
+};

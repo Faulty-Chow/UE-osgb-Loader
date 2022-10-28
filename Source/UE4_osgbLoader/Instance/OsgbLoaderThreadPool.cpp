@@ -14,6 +14,7 @@
 #include <osgDB/ReadFile>
 
 #include "Materials/MaterialInterface.h"
+#include "ODSC/ODSCManager.h"
 
 #ifdef _MSVC_LANG
 #if _MSVC_LANG < 201703L		// C++17
@@ -601,6 +602,7 @@ private:
 			else
 			{
 				check(_plod != nullptr);
+				//TArray<FString> materialsToCompile;
 				for (auto geometry : _plod->_geometries)
 				{
 					for (auto meshSection : *geometry->_meshSections)
@@ -609,13 +611,30 @@ private:
 						FMemory::Memcpy(MipData, meshSection->_textureData, meshSection->_cols * meshSection->_rows * 4);
 						meshSection->_texture->PlatformData->Mips[0].BulkData.Unlock();
 						meshSection->_texture->UpdateResource();
-						meshSection->_material->SetTextureParameterValue("Param", meshSection->_texture);
+						//meshSection->_material->SetTextureParameterValue("Param", meshSection->_texture);
+						//materialsToCompile.Emplace(meshSection->_material->GetName());
 						delete meshSection->_textureData;
 						meshSection->_textureData = nullptr;
 					}
 				}
-				check(_plod->_parent);
-				_plod->_parent->AddChild(_plod->_index, _plod);
+				FFunctionGraphTask::CreateAndDispatchWhenReady(
+					[plod = _plod](void) ->void
+					{
+						for (auto geometry : plod->_geometries)
+						{
+							for (auto meshSection : *geometry->_meshSections)
+							{
+								meshSection->_material->SetTextureParameterValue("Param", meshSection->_texture);
+								OsgbLoaderThreadPool::GetInstance()->GetRuntimeMeshActor()->SetupMaterialSlot(meshSection);
+							}
+						}
+						check(plod->_parent);
+						plod->_parent->AddChild(plod->_index, plod);
+					},
+					TStatId(), nullptr, ENamedThreads::GameThread);
+				// OsgbLoaderThreadPool::GetInstance()->GetODSCManager()->AddThreadedRequest(materialsToCompile, EShaderPlatform::SP_PCD3D_SM5, true);
+				//check(_plod->_parent);
+				//_plod->_parent->AddChild(_plod->_index, _plod);
 				_plod = nullptr;
 			}
 		} while (!_bDone);
@@ -650,7 +669,7 @@ UWorld* OsgbLoaderThreadPool::GetWorld()
 OsgbLoaderThreadPool::OsgbLoaderThreadPool(URuntimeMeshSubsystem* runtimeMeshSubsystem) :
 	_runtimeMeshSubsystem(runtimeMeshSubsystem)
 {
-	
+	_pODSCManager=new FODSCManager();
 }
 
 OsgbLoaderThreadPool::~OsgbLoaderThreadPool()

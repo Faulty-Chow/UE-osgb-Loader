@@ -27,6 +27,7 @@ FRuntimeMeshComponentSceneProxy::FRuntimeMeshComponentSceneProxy(URuntimeMeshCom
 	: FPrimitiveSceneProxy(Component)
 	, BodySetup(Component->GetBodySetup())
 	, bAnyMaterialUsesDithering(false)
+	//, _defaultMaterial(Component->GetDefaultMaterial())
 {
 	check(Component->GetRuntimeMesh() != nullptr);
 	RMC_LOG_VERBOSE("Created");
@@ -40,23 +41,34 @@ FRuntimeMeshComponentSceneProxy::FRuntimeMeshComponentSceneProxy(URuntimeMeshCom
 	{
 		const FRuntimeMeshLOD& LOD = Mesh->LODs[LODIndex];
 
-		for (const auto& Section : LOD.Sections)
+		Materials.Empty();
+		for (int32 i=0;i< Mesh->MaterialSlots.Num();i++)
 		{
-			const FRuntimeMeshSectionProperties& SectionProperties = Section.Value;
-			int32 MaterialSlotIndex = SectionProperties.MaterialSlot;
-
-			if (!Materials.Contains(MaterialSlotIndex))
-			{
-				UMaterialInterface* SlotMaterial = Component->GetMaterial(MaterialSlotIndex);
-				if (!SlotMaterial)
-				{
-					SlotMaterial = UMaterial::GetDefaultMaterial(MD_Surface);
-				}
-				Materials.Add(MaterialSlotIndex, SlotMaterial);
-				MaterialRelevance |= SlotMaterial->GetRelevance(GetScene().GetFeatureLevel());
-				bAnyMaterialUsesDithering |= SlotMaterial->IsDitheredLODTransition();
-			}		
+			UMaterialInterface* SlotMaterial = Mesh->MaterialSlots[i].Material;
+			if (SlotMaterial == nullptr) continue;
+			Materials.Add(i, SlotMaterial);
+			MaterialRelevance |= SlotMaterial->GetRelevance(GetScene().GetFeatureLevel());
+			bAnyMaterialUsesDithering |= SlotMaterial->IsDitheredLODTransition();
 		}
+
+		//for (const auto& Section : LOD.Sections)
+		//{
+		//	const FRuntimeMeshSectionProperties& SectionProperties = Section.Value;
+		//	int32 MaterialSlotIndex = SectionProperties.MaterialSlot;
+
+		//	if (!Materials.Contains(MaterialSlotIndex))
+		//	{
+		//		UMaterialInterface* SlotMaterial = Component->GetMaterial(MaterialSlotIndex);
+		//		if (!SlotMaterial)
+		//		{
+		//			// SlotMaterial = _defaultMaterial;
+		//			SlotMaterial = UMaterial::GetDefaultMaterial(MD_Surface);
+		//		}
+		//		Materials.Add(MaterialSlotIndex, SlotMaterial);
+		//		MaterialRelevance |= SlotMaterial->GetRelevance(GetScene().GetFeatureLevel());
+		//		bAnyMaterialUsesDithering |= SlotMaterial->IsDitheredLODTransition();
+		//	}		
+		//}
 	}   
 
 	// Disable shadow casting if no section has it enabled.

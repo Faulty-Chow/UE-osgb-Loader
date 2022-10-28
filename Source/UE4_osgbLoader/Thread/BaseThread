@@ -2,37 +2,64 @@
 #include "../UE4_osgbLoader.h"
 #include "CoreMinimal.h"
 
-class BaseThreadPool;
-class BaseAsyncTask;
+#include <atomic>
 
 class BaseThread : public FRunnable
 {
 public:
-	BaseThread(BaseThreadPool* threadPool, FString threadName = "BaseThread");
+	BaseThread(FString threadName);
 	virtual ~BaseThread();
 
 public:
-	virtual bool Create(uint32 stackSize = (32 * 1024), EThreadPriority threadPriority = TPri_Normal);
-	virtual bool ExecuteTask(BaseAsyncTask* task);
-	virtual void Kill();
+#ifdef _MSVC_LANG
+#if _MSVC_LANG >= 201703L
+	[[nodiscard]]
+#endif 
+#endif
+	bool Create(FEvent* pStartEvent, uint32 stackSize = (32 * 1024), EThreadPriority threadPriority = TPri_Normal);
+	void StartThread();
+	void StopThread(bool bShouldWait = true);
 
-	__forceinline bool IsDone() { return _bDone; }
-	__forceinline bool IsActive() { return _bActive; }
+	void Wakeup();
+	virtual bool SetTask(void* task) = 0;
+
+	__forceinline bool IsDone() { return _bDead.load(); }
+	__forceinline bool IsActive() { return _bActive.load(); }
+	__forceinline bool IsFinish() { return _bFinish.load(); }
+
+protected:
+	virtual uint32 Run() override;
+	virtual void ExecuteTask() = 0;
+
+	template<typename Lambda>
+	static void DoInGameThread(Lambda&& task)
+	{
+		if (IsInGameThread())
+			task();
+		else
+		{
+			FFunctionGraphTask::CreateAndDispatchWhenReady(
+				[task]()
+				{
+					task();
+				}, 
+				TStatId(), nullptr, ENamedThreads::GameThread);
+		}
+	}
 
 private:
 	virtual bool Init() override { return FRunnable::Init(); }
-	virtual uint32 Run() override;
-	virtual void Stop() override;
+	virtual void Stop() override { FRunnable::Stop(); }
 	virtual void Exit() override { FRunnable::Exit(); }
 
 protected:
-	int32  _threadID;
 	FString _threadName;
 	FRunnableThread* _pThread;
 
-	volatile bool _bDone;
-	volatile bool _bActive;
+	FEvent* _pWakeupEvent;
+	FEvent* _pStartEvent;
 
-	BaseThreadPool* _pThreadPool;
-	BaseAsyncTask* _pTask;
+	std::atomic_bool _bFinish;
+	std::atomic_bool _bActive;
+	std::atomic_bool _bDead;
 };

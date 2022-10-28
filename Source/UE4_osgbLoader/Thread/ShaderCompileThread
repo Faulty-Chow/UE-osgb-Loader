@@ -1,0 +1,20 @@
+#pragma once
+#include "BaseThread"
+#include "Misc/SingleThreadRunnable.h"
+#include "GenericPlatform/GenericPlatformFile.h"
+#include "Containers/Queue.h"
+#include "ShaderCompiler.h"
+#include "RHIDefinitions.h"
+
+class ShaderCompileThread final :
+	public BaseThread, FSingleThreadRunnable
+{
+public:
+	virtual void Tick() override;
+	virtual bool SetTask(void* task) override;
+
+private:
+	virtual void ExecuteTask() override;
+
+	class PagedLOD* _task;
+};

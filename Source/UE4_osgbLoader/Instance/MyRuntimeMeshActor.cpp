@@ -15,6 +15,7 @@ AMyRuntimeMeshActor::AMyRuntimeMeshActor()
 {
 	_defaultMaterial = Cast<UMaterialInterface>(StaticLoadObject(UMaterialInterface::StaticClass(), nullptr, TEXT("Material'/Game/NewMaterial.NewMaterial'")));
 #if USE_RuntimeMeshComponent
+	RuntimeMeshComponentStatic = CreateDefaultSubobject<URuntimeMeshComponentStatic>(TEXT("RuntimeMeshComponentStatic"));
 
 #if ENGINE_MAJOR_VERSION >= 4 && ENGINE_MINOR_VERSION >= 24
 	SetCanBeDamaged(false);
@@ -76,7 +77,8 @@ EComponentMobility::Type AMyRuntimeMeshActor::GetMobility()
 void AMyRuntimeMeshActor::SetupMaterialSlot(MeshSection* meshSection)
 {
 #if USE_RuntimeMeshComponent
-	_staticProvider->SetupMaterialSlot(meshSection->_sectionID, NAME_None, meshSection->_material);
+	// _staticProvider->SetupMaterialSlot(meshSection->_sectionID, FName(meshSection->_material->GetName()), meshSection->_material);
+	RuntimeMeshComponentStatic->SetupMaterialSlot(meshSection->_sectionID, FName(meshSection->_material->GetName()), meshSection->_material);
 #else
 	_proceduralMeshComponent->SetMaterial(meshSection->_sectionID, meshSection->_material);
 #endif
@@ -85,12 +87,18 @@ void AMyRuntimeMeshActor::SetupMaterialSlot(MeshSection* meshSection)
 void AMyRuntimeMeshActor::CreateSectionFromComponents(MeshSection* meshSection)
 {
 #if USE_RuntimeMeshComponent
-	_staticProvider->CreateSectionFromComponents(
+	RuntimeMeshComponentStatic->CreateSectionFromComponents(
 		0, meshSection->_sectionID, meshSection->_sectionID,
 		*meshSection->_vertices, *meshSection->_triangles, *meshSection->_normals,
 		*meshSection->_UV, *meshSection->_vertexColors, *meshSection->_tangent,
 		ERuntimeMeshUpdateFrequency::Frequent, false
 	);
+	/*_staticProvider->CreateSectionFromComponents(
+		0, meshSection->_sectionID, meshSection->_sectionID,
+		*meshSection->_vertices, *meshSection->_triangles, *meshSection->_normals,
+		*meshSection->_UV, *meshSection->_vertexColors, *meshSection->_tangent,
+		ERuntimeMeshUpdateFrequency::Frequent, false
+	);*/
 #else
 	_proceduralMeshComponent->CreateMeshSection(
 		meshSection->_sectionID, *meshSection->_vertices, *meshSection->_triangles,
@@ -103,7 +111,8 @@ void AMyRuntimeMeshActor::CreateSectionFromComponents(MeshSection* meshSection)
 void AMyRuntimeMeshActor::RemoveSectionFromComponents(MeshSection* meshSection)
 {
 #if USE_RuntimeMeshComponent
-	_staticProvider->RemoveSection(0, meshSection->_sectionID);
+	RuntimeMeshComponentStatic->RemoveSection(0, meshSection->_sectionID);
+	//_staticProvider->RemoveSection(0, meshSection->_sectionID);
 #else
 	_proceduralMeshComponent->ClearMeshSection(meshSection->_sectionID);
 #endif

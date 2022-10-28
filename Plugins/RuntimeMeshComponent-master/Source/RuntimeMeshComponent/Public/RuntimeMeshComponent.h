@@ -18,6 +18,12 @@ class RUNTIMEMESHCOMPONENT_API URuntimeMeshComponent : public UMeshComponent, pu
 {
 	GENERATED_BODY()
 
+//private:
+//	class UMaterialInterface* _defaultMaterial;
+//
+//public:
+//	FORCEINLINE class UMaterialInterface* GetDefaultMaterial() { return _defaultMaterial; }
+
 private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = RuntimeMesh, Meta = (AllowPrivateAccess = "true", DisplayName = "Runtime Mesh"))

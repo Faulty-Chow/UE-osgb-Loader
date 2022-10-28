@@ -22,5 +22,5 @@ extern std::condition_variable GameThreadCondition;
 #endif
 
 #define USE_FrustumCulling 1
-#define USE_RuntimeMeshComponent 0
-#define ROV 50000
+#define USE_RuntimeMeshComponent 1
+#define ROV 0

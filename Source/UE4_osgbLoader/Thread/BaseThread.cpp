@@ -1,75 +1,66 @@
 #include "BaseThread"
-#include "BaseThreadPool"
-#include "BaseAsyncTask"
 
-BaseThread::BaseThread(BaseThreadPool* threadPool, FString threadName) :
-	_threadName(threadName), _bDone(false), _bActive(true)
+BaseThread::BaseThread(FString threadName) :
+	_threadName(threadName), _bDead(false), _bActive(false), _bFinish(true),
+	_pThread(nullptr), _pStartEvent(nullptr), _pWakeupEvent(nullptr)
 {
-	check(threadPool);
-	_pThreadPool = threadPool;
-	_pTask = nullptr;
 }
 
-bool BaseThread::Create(uint32 stackSize, EThreadPriority threadPriority)
+bool BaseThread::Create(FEvent* pStartEvent, uint32 stackSize /*= (32 * 1024)*/, EThreadPriority threadPriority /*= TPri_Normal*/)
 {
+	_pStartEvent = pStartEvent;
 	_pThread = FRunnableThread::Create(this, *_threadName, stackSize, threadPriority);
-	if (_pThread == nullptr)
-		return false;
-	_threadID = _pThread->GetThreadID();
-	return true;
+	if (_pThread)
+	{
+		_pWakeupEvent = FPlatformProcess::GetSynchEventFromPool(true);
+		return true;
+	}
+	return false;
+}
+
+void BaseThread::StartThread()
+{
+	check(_pThread);
+	_bActive.exchange(true);
+	_pStartEvent->Trigger();
+	_pStartEvent = nullptr;
+}
+
+void BaseThread::StopThread(bool bShouldWait /*= true*/)
+{
+	_bDead.exchange(true);
+	Wakeup();
+	_pThread->Kill(bShouldWait);
+	delete _pThread;
+	_pThread = nullptr;
+}
+
+void BaseThread::Wakeup()
+{
+	if (_bDead.load() == true)
+		return;
+	if (_bActive.load() == false)
+	{
+		_bActive.exchange(true);
+		_pWakeupEvent->Trigger();
+	}
 }
 
 BaseThread::~BaseThread()
 {
-	delete _pThread;
-	_pThread = nullptr;
-	_pThreadPool = nullptr;
-	if (_pTask)
-	{
-		delete _pTask;
-		_pTask = nullptr;
-	}
-}
+	StopThread();
 
-bool BaseThread::ExecuteTask(BaseAsyncTask* task)
-{
-	if (_bActive || _bDone)
-		return false;
-	_pTask = task;
-	FPlatformMisc::MemoryBarrier();
-	_pThread->Suspend(false);
-	return true;
+	FPlatformProcess::ReturnSynchEventToPool(_pWakeupEvent);
+	_pWakeupEvent = nullptr;
 }
 
 uint32 BaseThread::Run()
 {
-	while (!_bDone)
+	_pStartEvent->Wait();
+	_bActive.exchange(true);
+	while (!_bDead.load())
 	{
-		_pTask=_pThreadPool->ReturnToPool(this);
-		while (_pTask == nullptr)
-		{
-			_bActive = false;
-			_pThread->Suspend(true);
-		}
-		FPlatformMisc::MemoryBarrier();
-		_pTask->Execute();
-		_pTask->SaveResult();
-		delete _pTask;
-		_pTask = nullptr;
+
 	}
-	_bActive = false;
 	return 0;
-}
-
-void BaseThread::Stop()
-{
-	_bDone = true;
-	_bActive = false;
-	_pThread->Suspend(true);
-}
-
-void BaseThread::Kill()
-{
-	Stop();
-	_pThread->Kill(true);
 }

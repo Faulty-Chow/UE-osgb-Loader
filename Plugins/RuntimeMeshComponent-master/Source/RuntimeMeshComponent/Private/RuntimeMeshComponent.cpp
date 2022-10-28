@@ -24,6 +24,9 @@ URuntimeMeshComponent::URuntimeMeshComponent()
 
 	Super::SetTickGroup(TG_DuringPhysics);
 	Super::SetTickableWhenPaused(true);
+
+	/*_defaultMaterial = Cast<UMaterialInterface>(StaticLoadObject(UMaterialInterface::StaticClass(), nullptr, TEXT("Material'/Game/NewDefaultMaterial.NewDefaultMaterial'")));
+	check(_defaultMaterial);*/
 }
 
 void URuntimeMeshComponent::EnsureHasRuntimeMesh()

@@ -43,6 +43,7 @@ public:
 
 	int32 GetUniqueID() const { return ObjectId.Get(); }
 
+	// UMaterialInterface* _defaultMaterial;
 	UMaterialInterface* GetMaterialSlot(int32 MaterialSlotId) const
 	{
 		UMaterialInterface*const* Mat = Materials.Find(MaterialSlotId);
@@ -50,7 +51,7 @@ public:
 		{
 			return *Mat;
 		}
-		
+		// return _defaultMaterial;
 		return UMaterial::GetDefaultMaterial(MD_Surface);
 	}
 

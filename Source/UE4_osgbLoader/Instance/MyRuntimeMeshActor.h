@@ -8,6 +8,7 @@
 
 #if USE_RuntimeMeshComponent
 #include "RuntimeMeshComponent.h"
+#include "Components/RuntimeMeshComponentStatic.h"
 #include "Providers/RuntimeMeshProviderStatic.h"
 #endif
 #include "ProceduralMeshComponent.h"
@@ -28,6 +29,7 @@ public:
 
 #if USE_RuntimeMeshComponent
 private:
+	class URuntimeMeshComponentStatic* RuntimeMeshComponentStatic;
 	class URuntimeMeshComponent* RuntimeMeshComponent;
 	class URuntimeMeshProviderStatic* _staticProvider;
 

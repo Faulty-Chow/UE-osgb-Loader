@@ -1,0 +1,49 @@
+#pragma once
+#include "BaseThread"
+#include <functional>
+#include <set>
+
+//struct FileReadTask
+//{
+//	enum TaskType
+//	{
+//		ReloadSelf,
+//		LoadSuccessor
+//	};
+//	FileReadTask(class Geometry* geometry, TaskType type) :
+//		_geometry(geometry), _type(type) {}
+//	class Geometry* _geometry;
+//	TaskType _type;
+//	bool _bTakeIn;
+//};
+//
+//class FileReadThread :public BaseThread
+//{
+//public:
+//	virtual bool SetTask(void* task) override;
+//
+//private:
+//	virtual void ExecuteTask() override;
+//
+//	FileReadTask* _task;
+//};
+//
+//struct FileReadTaskQueue
+//{
+//	static bool CompareFileReadTask(FileReadTask* lhs, FileReadTask* rhs);
+//	FileReadTaskQueue(int32 maxSize = 200);
+//	void Enqueue(FileReadTask*& request);
+//	bool Dequeue(FileReadTask*& request);
+//	void Clear();
+//
+//	std::function<bool(FileReadTask*, FileReadTask*)> func_compare;
+//	int32 _maxSize;
+//	std::mutex _requestMutex;
+//	std::set<FileReadTask*, decltype(func_compare)> _requestOnce;
+//	std::set<FileReadTask*, decltype(func_compare)> _requestRepeatedly;
+//};
+//
+//class FileReadManager
+//{
+//
+//};

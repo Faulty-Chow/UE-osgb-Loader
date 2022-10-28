@@ -104,4 +104,6 @@ public:
 	FileReadTask* _fileReadRequest;
 
 	std::vector<MeshSection*>* _meshSections;
+
+	int64 _lastFrameNumberActive;
 };
