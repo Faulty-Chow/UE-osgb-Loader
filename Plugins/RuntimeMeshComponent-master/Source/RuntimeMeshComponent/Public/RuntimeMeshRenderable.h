@@ -37,6 +37,15 @@ public:
 		Data.Empty(Slack * GetStride());
 	}
 
+#if ENGINE_MAJOR_VERSION == 5
+	int32 Add(const FVector3f& InPosition)
+	{
+		int32 Index = Data.Num();
+		Data.AddUninitialized(sizeof(FVector3f));
+		*((FVector3f*)&Data[Index]) = InPosition;
+		return Index / sizeof(FVector3f);
+	}
+#endif
 	int32 Add(const FVector& InPosition)
 	{
 		int32 Index = Data.Num();
@@ -59,6 +68,12 @@ public:
 	{
 		*((FVector*)&Data[Index * sizeof(FVector)]) = NewPosition;
 	}
+#if ENGINE_MAJOR_VERSION == 5
+	const FVector3f& GetPosition3f(int32 Index) const
+	{
+		return *((FVector3f*)&Data[Index * sizeof(FVector3f)]);
+	}
+#endif
 	const FVector& GetPosition(int32 Index) const
 	{
 		return *((FVector*)&Data[Index * sizeof(FVector)]);
@@ -293,6 +308,30 @@ public:
 			return (*((FPackedNormal*)&Data[EntryIndex * sizeof(FPackedNormal)])).ToFVector();
 		}
 	}
+#if ENGINE_MAJOR_VERSION == 5
+	void GetTangents3f(int32 Index, FVector3f& OutTangentX, FVector3f& OutTangentY, FVector3f& OutTangentZ) const
+	{
+		const int32 EntryIndex = Index * 2;
+		if (bIsHighPrecision)
+		{
+			FPackedRGBA16N TempTangentX = *((FPackedRGBA16N*)&Data[EntryIndex * sizeof(FPackedRGBA16N)]);
+			FPackedRGBA16N TempTangentZ = *((FPackedRGBA16N*)&Data[(EntryIndex + 1) * sizeof(FPackedRGBA16N)]);
+			OutTangentX = TempTangentX.ToFVector3f();
+			FVector temp = GenerateYAxis(TempTangentX, TempTangentZ);
+			OutTangentY = FVector3f(temp.X, temp.Y, temp.Z);
+			OutTangentZ = TempTangentZ.ToFVector3f();
+		}
+		else
+		{
+			FPackedNormal TempTangentX = *((FPackedNormal*)&Data[EntryIndex * sizeof(FPackedNormal)]);
+			FPackedNormal TempTangentZ = *((FPackedNormal*)&Data[(EntryIndex + 1) * sizeof(FPackedNormal)]);
+			OutTangentX = TempTangentX.ToFVector3f();
+			FVector temp = GenerateYAxis(TempTangentX, TempTangentZ);
+			OutTangentY = FVector3f(temp.X, temp.Y, temp.Z);
+			OutTangentZ = TempTangentZ.ToFVector3f();
+		}
+	}
+#endif
 	void GetTangents(int32 Index, FVector& OutTangentX, FVector& OutTangentY, FVector& OutTangentZ) const
 	{
 		const int32 EntryIndex = Index * 2;
@@ -392,6 +431,27 @@ public:
 	If you skip any it'll crash UE
 	(if you're here because it crashed, told you !)
 	*/
+#if ENGINE_MAJOR_VERSION == 5
+	int32 Add(const FVector2f& InTexCoord, int32 ChannelId = 0)
+	{
+		int32 Index = Data.Num();
+		checkf((Index / GetElementSize()) % ChannelCount == ChannelId, TEXT("[FRuntimeMeshVertexTexCoordStream::Add] UVs have been added out of order, aborting..."));
+		Data.AddZeroed(GetElementSize());
+
+		if (bIsHighPrecision)
+		{
+			static const int32 ElementSize = sizeof(FVector2f);
+			*((FVector2f*)&Data[Index]) = InTexCoord;
+		}
+		else
+		{
+			static const int32 ElementSize = sizeof(FVector2DHalf);
+			*((FVector2DHalf*)&Data[Index]) = InTexCoord;
+		}
+
+		return Index / GetStride();
+	}
+#endif
 	int32 Add(const FVector2D& InTexCoord, int32 ChannelId = 0)
 	{
 		int32 Index = Data.Num();
@@ -481,6 +541,21 @@ public:
 			*((FVector2DHalf*)&Data[(Index * ElementSize * ChannelCount) + (ChannelId * ElementSize)]) = NewTexCoord;
 		}
 	}
+#if ENGINE_MAJOR_VERSION == 5
+	const FVector2f GetTexCoord2f(int32 Index, int32 ChannelId = 0) const
+	{
+		if (bIsHighPrecision)
+		{
+			static const int32 ElementSize = sizeof(FVector2f);
+			return *((FVector2f*)&Data[(Index * ElementSize * ChannelCount) + (ChannelId * ElementSize)]);
+		}
+		else
+		{
+			static const int32 ElementSize = sizeof(FVector2DHalf);
+			return *((FVector2DHalf*)&Data[(Index * ElementSize * ChannelCount) + (ChannelId * ElementSize)]);
+		}
+	}
+#endif
 	const FVector2D GetTexCoord(int32 Index, int32 ChannelId = 0) const
 	{
 		if (bIsHighPrecision)

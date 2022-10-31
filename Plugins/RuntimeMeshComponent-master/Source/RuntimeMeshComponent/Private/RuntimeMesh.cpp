@@ -554,7 +554,11 @@ bool URuntimeMesh::GetPhysicsTriMeshData(struct FTriMeshCollisionData* Collision
 		bool bResult = MeshProviderPtr->GetCollisionMesh(CollisionMesh);
 		if (bResult && CollisionMesh.HasValidMeshData(bResult))
 		{
+#if ENGINE_MAJOR_VERSION == 5
+			CollisionData->Vertices = static_cast<TArray<FVector3f>>(CollisionMesh.Vertices.TakeContents());
+#else
 			CollisionData->Vertices = CollisionMesh.Vertices.TakeContents();
+#endif
 			CollisionData->Indices = CollisionMesh.Triangles.TakeContents();
 			CollisionData->UVs = CollisionMesh.TexCoords.TakeContents();
 			CollisionData->MaterialIndices = CollisionMesh.MaterialIndices.TakeContents();

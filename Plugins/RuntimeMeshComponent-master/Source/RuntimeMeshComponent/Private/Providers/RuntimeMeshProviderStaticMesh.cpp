@@ -117,7 +117,11 @@ void URuntimeMeshProviderStaticMesh::UpdateRenderingFromStaticMesh()
 	}
 
 	// Check mesh data is accessible
+#if ENGINE_MAJOR_VERSION == 5
+	if (!((GIsEditor || StaticMesh->bAllowCPUAccess) && StaticMesh->GetRenderData() != nullptr))
+#else
 	if (!((GIsEditor || StaticMesh->bAllowCPUAccess) && StaticMesh->RenderData != nullptr))
+#endif
 	{
 		ConfigureLODs({ FRuntimeMeshLODProperties() });
 		MarkCollisionDirty();
@@ -125,20 +129,32 @@ void URuntimeMeshProviderStaticMesh::UpdateRenderingFromStaticMesh()
 	}
 
 	// Copy materials
+#if ENGINE_MAJOR_VERSION == 5
+	const auto& MaterialSlots = StaticMesh->GetStaticMaterials();
+#else
 	const auto& MaterialSlots = StaticMesh->StaticMaterials;
+#endif
 	for (int32 SlotIndex = 0; SlotIndex < MaterialSlots.Num(); SlotIndex++)
 	{
 		SetupMaterialSlot(SlotIndex, MaterialSlots[SlotIndex].MaterialSlotName, MaterialSlots[SlotIndex].MaterialInterface);
 	}
 
+#if ENGINE_MAJOR_VERSION == 5
+	const auto& LODResources = StaticMesh->GetRenderData()->LODResources;
+#else
 	const auto& LODResources = StaticMesh->RenderData->LODResources;
+#endif
 
 	// Setup LODs
 	TArray<FRuntimeMeshLODProperties> LODs;
 	for (int32 LODIndex = 0; LODIndex < LODResources.Num() && LODIndex <= MaxLOD; LODIndex++)
 	{
 		FRuntimeMeshLODProperties LODProperties;
+#if ENGINE_MAJOR_VERSION == 5
+		LODProperties.ScreenSize = StaticMesh->GetRenderData()->ScreenSize[LODIndex].Default;
+#else
 		LODProperties.ScreenSize = StaticMesh->RenderData->ScreenSize[LODIndex].Default;
+#endif
 
 		LODs.Add(LODProperties);
 	}

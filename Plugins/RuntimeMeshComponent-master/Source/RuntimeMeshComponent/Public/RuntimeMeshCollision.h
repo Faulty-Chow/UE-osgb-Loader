@@ -260,6 +260,13 @@ public:
 		Data.Reserve(Number);
 	}
 
+#if ENGINE_MAJOR_VERSION == 5
+	FORCEINLINE int32 Add(const FVector3f& InPosition)
+	{
+		return Data.Add(static_cast<FVector>(InPosition));
+	}
+#endif
+
 	FORCEINLINE int32 Add(const FVector& InPosition)
 	{
 		return Data.Add(InPosition);
@@ -461,6 +468,13 @@ public:
 	{
 		Data[ChannelId].Empty(Slack);
 	}
+
+#if ENGINE_MAJOR_VERSION == 5
+	FORCEINLINE int32 Add(int32 ChannelId, const FVector2f& NewTexCoord)
+	{
+		return Data[ChannelId].Add(static_cast<FVector2D>(NewTexCoord));
+	}
+#endif
 
 	FORCEINLINE int32 Add(int32 ChannelId, const FVector2D& NewTexCoord)
 	{

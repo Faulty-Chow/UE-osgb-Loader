@@ -194,6 +194,16 @@ bool TriangulatePoly(FRuntimeMeshRenderableMeshData& MeshData, int32 VertBase, c
 			const int32 BIndex = EarVertexIndex;
 			const int32 CIndex = (EarVertexIndex + 1) % VertIndices.Num();
 
+#if ENGINE_MAJOR_VERSION == 5
+			const FVector3f AVertPos = MeshData.Positions.GetPosition3f(VertIndices[AIndex]);
+			const FVector3f BVertPos = MeshData.Positions.GetPosition3f(VertIndices[BIndex]);
+			const FVector3f CVertPos = MeshData.Positions.GetPosition3f(VertIndices[CIndex]);
+
+			// Check that this vertex is convex (cross product must be positive)
+			const FVector3f ABEdge = BVertPos - AVertPos;
+			const FVector3f ACEdge = CVertPos - AVertPos;
+			const float TriangleDeterminant = (ABEdge ^ ACEdge) | static_cast<FVector3f>(PolyNormal);
+#else
 			const FVector AVertPos = MeshData.Positions.GetPosition(VertIndices[AIndex]);
 			const FVector BVertPos = MeshData.Positions.GetPosition(VertIndices[BIndex]);
 			const FVector CVertPos = MeshData.Positions.GetPosition(VertIndices[CIndex]);
@@ -202,6 +212,7 @@ bool TriangulatePoly(FRuntimeMeshRenderableMeshData& MeshData, int32 VertBase, c
 			const FVector ABEdge = BVertPos - AVertPos;
 			const FVector ACEdge = CVertPos - AVertPos;
 			const float TriangleDeterminant = (ABEdge ^ ACEdge) | PolyNormal;
+#endif
 			if (TriangleDeterminant > 0.f)
 			{
 				continue;
@@ -211,7 +222,11 @@ bool TriangulatePoly(FRuntimeMeshRenderableMeshData& MeshData, int32 VertBase, c
 			// Look through all verts before this in array to see if any are inside triangle
 			for (int32 VertexIndex = 0; VertexIndex < VertIndices.Num(); VertexIndex++)
 			{
+#if ENGINE_MAJOR_VERSION == 5
+				const FVector3f TestVertPos = MeshData.Positions.GetPosition3f(VertIndices[VertexIndex]);
+#else
 				const FVector TestVertPos = MeshData.Positions.GetPosition(VertIndices[VertexIndex]);
+#endif
 
 				if (VertexIndex != AIndex &&
 					VertexIndex != BIndex &&
@@ -649,11 +664,19 @@ void URuntimeMeshSlicer::SliceRuntimeMesh(URuntimeMeshComponent* InRuntimeMesh, 
 							check(ClippedEdges < 2);
 							if (ClippedEdges == 0)
 							{
+#if ENGINE_MAJOR_VERSION == 5
+								NewClipEdge.V0 = NewSourceSection.Positions.GetPosition3f(InterpVertIndex);
+#else
 								NewClipEdge.V0 = NewSourceSection.Positions.GetPosition(InterpVertIndex);
+#endif
 							}
 							else
 							{
+#if ENGINE_MAJOR_VERSION == 5
+								NewClipEdge.V1 = NewSourceSection.Positions.GetPosition3f(InterpVertIndex);
+#else
 								NewClipEdge.V1 = NewSourceSection.Positions.GetPosition(InterpVertIndex);
+#endif
 							}
 
 							ClippedEdges++;

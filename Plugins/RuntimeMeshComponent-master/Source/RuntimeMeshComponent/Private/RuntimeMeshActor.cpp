@@ -10,7 +10,7 @@
 ARuntimeMeshActor::ARuntimeMeshActor(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
-#if ENGINE_MAJOR_VERSION >= 4 && ENGINE_MINOR_VERSION >= 24
+#if ENGINE_MAJOR_VERSION >= 4 && ENGINE_MINOR_VERSION >= 24 || ENGINE_MAJOR_VERSION == 5
 	SetCanBeDamaged(false);
 #else
 	bCanBeDamaged = false;

@@ -6,7 +6,9 @@
 #include "RuntimeMeshProxy.h"
 #include "Materials/Material.h"
 #include "PhysicsEngine/BodySetup.h"
+#if ENGINE_MAJOR_VERSION != 5
 #include "TessellationRendering.h"
+#endif
 #include "PrimitiveSceneProxy.h"
 #include "Materials/Material.h"
 #include "UnrealEngine.h"
@@ -104,7 +106,7 @@ FPrimitiveViewRelevance FRuntimeMeshComponentSceneProxy::GetViewRelevance(const 
 	Result.bDrawRelevance = IsShown(View);
 	Result.bShadowRelevance = IsShadowCast(View);
 
-	#if ENGINE_MINOR_VERSION >= 26
+	#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION >= 26 || ENGINE_MAJOR_VERSION == 5
 		bool bForceDynamicPath = IsRichView(*View->Family) || IsSelected() || View->Family->EngineShowFlags.Wireframe;
 	#else
 		bool bForceDynamicPath = !IsStaticPathAvailable() || IsRichView(*View->Family) || IsSelected() || View->Family->EngineShowFlags.Wireframe;
@@ -117,7 +119,7 @@ FPrimitiveViewRelevance FRuntimeMeshComponentSceneProxy::GetViewRelevance(const 
 	Result.bRenderCustomDepth = ShouldRenderCustomDepth();
 	MaterialRelevance.SetPrimitiveViewRelevance(Result);
 	Result.bTranslucentSelfShadow = bCastVolumetricTranslucentShadow;
-#if ENGINE_MAJOR_VERSION >= 4 && ENGINE_MINOR_VERSION >= 25
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION == 5
 	Result.bVelocityRelevance = IsMovable() && Result.bOpaque && Result.bRenderInMainPass;
 #else
 	Result.bVelocityRelevance = IsMovable() && Result.bOpaqueRelevance && Result.bRenderInMainPass;
@@ -136,7 +138,11 @@ void FRuntimeMeshComponentSceneProxy::CreateMeshBatch(FMeshBatch& MeshBatch, con
 	const bool bRenderWireframe = WireframeMaterial != nullptr;
 
 	// Decide if we should be using adjacency information for this material
+#if ENGINE_MAJOR_VERSION == 5
+	const bool bWantsAdjacencyInfo = false;
+#else
 	const bool bWantsAdjacencyInfo = !bForRayTracing && !bRenderWireframe && RequiresAdjacencyInformation(Material, Section.Buffers->VertexFactory.GetType(), GetScene().GetFeatureLevel());
+#endif
 	check(!bWantsAdjacencyInfo || Section.bHasAdjacencyInfo);
 
 
@@ -251,7 +257,7 @@ void FRuntimeMeshComponentSceneProxy::GetDynamicMeshElements(const TArray<const 
 		{
 			const FSceneView* View = Views[ViewIndex];
 
-			#if ENGINE_MINOR_VERSION >= 26
+			#if  ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION >= 26 || ENGINE_MAJOR_VERSION == 5
 				bool bForceDynamicPath = IsRichView(*Views[ViewIndex]->Family) || Views[ViewIndex]->Family->EngineShowFlags.Wireframe || IsSelected();
 			#else
 				bool bForceDynamicPath = IsRichView(*Views[ViewIndex]->Family) || Views[ViewIndex]->Family->EngineShowFlags.Wireframe || IsSelected() || !IsStaticPathAvailable();
@@ -368,7 +374,11 @@ void FRuntimeMeshComponentSceneProxy::GetDynamicRayTracingInstances(struct FRayT
 
 
 					RayTracingInstance.Materials.Add(MeshBatch);
+#if ENGINE_MAJOR_VERSION == 5
+					RayTracingInstance.BuildInstanceMaskAndFlags(ERHIFeatureLevel::Type::SM5);
+#else
 					RayTracingInstance.BuildInstanceMaskAndFlags();
+#endif
 					OutRayTracingInstances.Add(RayTracingInstance);
 				}
 			}

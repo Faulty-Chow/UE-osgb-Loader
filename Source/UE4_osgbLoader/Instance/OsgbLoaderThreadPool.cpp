@@ -441,6 +441,7 @@ class ReadThread : public FRunnable
 						meshSection->_cols, meshSection->_rows, PF_B8G8R8A8);
 					meshSection->_material = UMaterialInstanceDynamic::Create(
 						OsgbLoaderThreadPool::GetInstance()->GetDefaultMaterial(), OsgbLoaderThreadPool::GetInstance()->GetWorld(), NAME_None);
+					//meshSection->_material->SetTextureParameterValue("Param", meshSection->_texture);
 					OsgbLoaderThreadPool::GetInstance()->GetRuntimeMeshActor()->SetupMaterialSlot(meshSection);
 				}
 			}
@@ -611,30 +612,31 @@ private:
 						FMemory::Memcpy(MipData, meshSection->_textureData, meshSection->_cols * meshSection->_rows * 4);
 						meshSection->_texture->PlatformData->Mips[0].BulkData.Unlock();
 						meshSection->_texture->UpdateResource();
-						//meshSection->_material->SetTextureParameterValue("Param", meshSection->_texture);
+						meshSection->_material->SetTextureParameterValue("Param", meshSection->_texture);
 						//materialsToCompile.Emplace(meshSection->_material->GetName());
 						delete meshSection->_textureData;
 						meshSection->_textureData = nullptr;
 					}
 				}
-				FFunctionGraphTask::CreateAndDispatchWhenReady(
-					[plod = _plod](void) ->void
-					{
-						for (auto geometry : plod->_geometries)
-						{
-							for (auto meshSection : *geometry->_meshSections)
-							{
-								meshSection->_material->SetTextureParameterValue("Param", meshSection->_texture);
-								OsgbLoaderThreadPool::GetInstance()->GetRuntimeMeshActor()->SetupMaterialSlot(meshSection);
-							}
-						}
-						check(plod->_parent);
-						plod->_parent->AddChild(plod->_index, plod);
-					},
-					TStatId(), nullptr, ENamedThreads::GameThread);
+				//FFunctionGraphTask::CreateAndDispatchWhenReady(
+				//	[plod = _plod](void) ->void
+				//	{
+				//		for (auto geometry : plod->_geometries)
+				//		{
+				//			for (auto meshSection : *geometry->_meshSections)
+				//			{
+				//				//meshSection->_texture->UpdateResource();
+				//				//meshSection->_material->SetTextureParameterValue("Param", meshSection->_texture);
+				//				//OsgbLoaderThreadPool::GetInstance()->GetRuntimeMeshActor()->SetupMaterialSlot(meshSection);
+				//			}
+				//		}
+				//		check(plod->_parent);
+				//		plod->_parent->AddChild(plod->_index, plod);
+				//	},
+				//	TStatId(), nullptr, ENamedThreads::GameThread);
 				// OsgbLoaderThreadPool::GetInstance()->GetODSCManager()->AddThreadedRequest(materialsToCompile, EShaderPlatform::SP_PCD3D_SM5, true);
-				//check(_plod->_parent);
-				//_plod->_parent->AddChild(_plod->_index, _plod);
+				check(_plod->_parent);
+				_plod->_parent->AddChild(_plod->_index, _plod);
 				_plod = nullptr;
 			}
 		} while (!_bDone);

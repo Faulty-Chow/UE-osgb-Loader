@@ -52,10 +52,17 @@ int32 URuntimeMeshStaticMeshConverter::CopyVertexOrGetIndex(const FStaticMeshLOD
 		int32 NewVertexIndex = NewMeshData.Positions.Add(LOD.VertexBuffers.PositionVertexBuffer.VertexPosition(VertexIndex));
 
 		// Copy Tangents
+#if ENGINE_MAJOR_VERSION == 5
+		NewMeshData.Tangents.Add(
+			static_cast<FVector4>(LOD.VertexBuffers.StaticMeshVertexBuffer.VertexTangentX(VertexIndex)),
+			static_cast<FVector4>(LOD.VertexBuffers.StaticMeshVertexBuffer.VertexTangentY(VertexIndex)),
+			static_cast<FVector4>(LOD.VertexBuffers.StaticMeshVertexBuffer.VertexTangentZ(VertexIndex)));
+#else
 		NewMeshData.Tangents.Add(
 			LOD.VertexBuffers.StaticMeshVertexBuffer.VertexTangentX(VertexIndex),
 			LOD.VertexBuffers.StaticMeshVertexBuffer.VertexTangentY(VertexIndex),
 			LOD.VertexBuffers.StaticMeshVertexBuffer.VertexTangentZ(VertexIndex));
+#endif
 
 		int32 NumTexCoords = LOD.VertexBuffers.StaticMeshVertexBuffer.GetNumTexCoords();
 
@@ -74,7 +81,7 @@ int32 URuntimeMeshStaticMeshConverter::CopyVertexOrGetIndex(const FStaticMeshLOD
 
 		// Copy Color
 
-#if ENGINE_MAJOR_VERSION >= 4 && ENGINE_MINOR_VERSION >= 23
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION == 5
 		if (LOD.bHasColorVertexData)
 #else
 		if (LOD.VertexBuffers.ColorVertexBuffer.GetNumVertices() > 0)
@@ -131,6 +138,20 @@ bool URuntimeMeshStaticMeshConverter::CopyStaticMeshSectionToRenderableMeshData(
 	}
 
 	// Check mesh data is accessible
+#if ENGINE_MAJOR_VERSION == 5
+	if (!((GIsEditor || StaticMesh->bAllowCPUAccess) && StaticMesh->GetRenderData() != nullptr))
+	{
+		return false;
+	}
+
+	// Check valid LOD
+	if (!StaticMesh->GetRenderData()->LODResources.IsValidIndex(LODIndex))
+	{
+		return false;
+	}
+
+	const FStaticMeshLODResources& LOD = StaticMesh->GetRenderData()->LODResources[LODIndex];
+#else
 	if (!((GIsEditor || StaticMesh->bAllowCPUAccess) && StaticMesh->RenderData != nullptr))
 	{
 		return false;
@@ -143,6 +164,7 @@ bool URuntimeMeshStaticMeshConverter::CopyStaticMeshSectionToRenderableMeshData(
 	}
 
 	const FStaticMeshLODResources& LOD = StaticMesh->RenderData->LODResources[LODIndex];
+#endif
 
 	// Check valid section
 	if (!LOD.Sections.IsValidIndex(SectionId))
@@ -218,6 +240,59 @@ bool URuntimeMeshStaticMeshConverter::CopyStaticMeshCollisionToCollisionSettings
 	}
 
 	// Do we have a body setup to copy?
+#if ENGINE_MAJOR_VERSION == 5
+	if (StaticMesh->GetBodySetup() == nullptr)
+	{
+		return false;
+	}
+
+	bool bHadSimple = false;
+
+	// Copy convex elements
+	const auto& SourceConvexElems = StaticMesh->GetBodySetup()->AggGeom.ConvexElems;
+	for (int32 ConvexIndex = 0; ConvexIndex < SourceConvexElems.Num(); ConvexIndex++)
+	{
+		bHadSimple = true;
+		OutCollisionSettings.ConvexElements.Emplace(
+			SourceConvexElems[ConvexIndex].VertexData,
+			SourceConvexElems[ConvexIndex].ElemBox);
+	}
+
+	// Copy boxes
+	const auto& SourceBoxes = StaticMesh->GetBodySetup()->AggGeom.BoxElems;
+	for (int32 BoxIndex = 0; BoxIndex < SourceBoxes.Num(); BoxIndex++)
+	{
+		bHadSimple = true;
+		OutCollisionSettings.Boxes.Emplace(
+			SourceBoxes[BoxIndex].Center,
+			SourceBoxes[BoxIndex].Rotation,
+			SourceBoxes[BoxIndex].X,
+			SourceBoxes[BoxIndex].Y,
+			SourceBoxes[BoxIndex].Z);
+	}
+
+	// Copy spheres
+	const auto& SourceSpheres = StaticMesh->GetBodySetup()->AggGeom.SphereElems;
+	for (int32 SphereIndex = 0; SphereIndex < SourceSpheres.Num(); SphereIndex++)
+	{
+		bHadSimple = true;
+		OutCollisionSettings.Spheres.Emplace(
+			SourceSpheres[SphereIndex].Center,
+			SourceSpheres[SphereIndex].Radius);
+	}
+
+	// Copy capsules
+	const auto& SourceCapsules = StaticMesh->GetBodySetup()->AggGeom.SphylElems;
+	for (int32 CapsuleIndex = 0; CapsuleIndex < SourceCapsules.Num(); CapsuleIndex++)
+	{
+		bHadSimple = true;
+		OutCollisionSettings.Capsules.Emplace(
+			SourceCapsules[CapsuleIndex].Center,
+			SourceCapsules[CapsuleIndex].Rotation,
+			SourceCapsules[CapsuleIndex].Radius,
+			SourceCapsules[CapsuleIndex].Length);
+	}
+#else
 	if (StaticMesh->BodySetup == nullptr)
 	{
 		return false;
@@ -269,6 +344,7 @@ bool URuntimeMeshStaticMeshConverter::CopyStaticMeshCollisionToCollisionSettings
 			SourceCapsules[CapsuleIndex].Radius,
 			SourceCapsules[CapsuleIndex].Length);
 	}
+#endif
 
 	if (bHadSimple)
 	{
@@ -287,12 +363,21 @@ bool URuntimeMeshStaticMeshConverter::CopyStaticMeshLODToCollisionData(UStaticMe
 	}
 
 	// Check valid LOD
+#if ENGINE_MAJOR_VERSION == 5
+	if (!StaticMesh->GetRenderData()->LODResources.IsValidIndex(LODIndex))
+	{
+		return false;
+	}
+
+	const FStaticMeshLODResources& LOD = StaticMesh->GetRenderData()->LODResources[LODIndex];
+#else
 	if (!StaticMesh->RenderData->LODResources.IsValidIndex(LODIndex))
 	{
 		return false;
 	}
 
 	const FStaticMeshLODResources& LOD = StaticMesh->RenderData->LODResources[LODIndex];
+#endif
 
 	uint32 NumUVChannels = LOD.VertexBuffers.StaticMeshVertexBuffer.GetNumTexCoords();
 	
