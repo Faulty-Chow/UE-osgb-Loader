@@ -1,8 +1,10 @@
 #include "Model"
 #include "Geometry"
 #include "PagedLOD"
-#include "../Instance/OsgbLoaderThreadPool"
+#include "../ThreadPool/RuntimeOsgbLoaderThreadPool"
+#include "../Thread/FileReadThread"
 #include "../Instance/Pawn"
+#include "../Instance/RuntimeMeshSubsystem.h"
 
 #ifdef _MSVC_LANG
 #if _MSVC_LANG < 201703L
@@ -16,14 +18,15 @@ Geometry::Geometry(PagedLOD* owner, int32 index, float threshold, osg::BoundingS
 	_meshSections(meshSections), _index(index)
 {
 	std::string filePath = _owner->_owner->_folderPath + "\\" + successorFilename;
-	_fileReadRequest = new FileReadTask(this, filePath);
+	PagedLOD* successor = new PagedLOD(this);
+	_fileReadRequest = new FileReadTask(successor, filePath);
 }
 
 void Geometry::LoadSuccessor()
 {
-	//UE_LOG(LogTemp, Warning, TEXT("Request ReadNodeFile: %s"), *FString(_fileReadRequest->_filePath.c_str()));
-	_fileReadRequest->_frameNumberLastRequest = Pawn::GetCurrentPawn()->GetFrameNumber();
-	OsgbLoaderThreadPool::GetInstance()->ReadNodeFile(_fileReadRequest);
+	// UE_LOG(LogTemp, Warning, TEXT("Request ReadNodeFile: %s"), *FString(_fileReadRequest->_filePath.c_str()));
+	// _fileReadRequest->_frameNumberLastRequest = Pawn::GetCurrentPawn()->GetFrameNumber();
+	URuntimeMeshSubsystem::GetRuntimeMeshSubsystem()->RequestNodeFile(_fileReadRequest);
 }
 
 Geometry::~Geometry()

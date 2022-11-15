@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "../UE4_osgbLoader.h"
+#include "../Thread/FileReadThread"
 
 #include <set>
 #include <list>
@@ -21,19 +22,9 @@ class StructureThread;
 class CleanThread;
 class URuntimeMeshSubsystem;
 class AMyRuntimeMeshActor;
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION >= 27
 class FODSCManager;
-
-struct FileReadTask
-{
-	FileReadTask(Geometry* geometry, std::string filePath) :
-		_frameNumberLastRequest(-1), _precursor(geometry),
-		_filePath(filePath), _bAllowLoad(true), _bReload(false) {}
-	int64 _frameNumberLastRequest;
-	Geometry* _precursor;
-	std::string _filePath;
-	bool _bAllowLoad;
-	bool _bReload;
-};
+#endif
 
 class OsgbLoaderThreadPool
 {
@@ -41,8 +32,10 @@ public:
 	static OsgbLoaderThreadPool* GetInstance();
 	UWorld* GetWorld();
 	UMaterialInterface* GetDefaultMaterial();
-	AMyRuntimeMeshActor* GetRuntimeMeshActor();
+	// AMyRuntimeMeshActor* GetRuntimeMeshActor();
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION >= 27
 	FODSCManager* GetODSCManager() { return _pODSCManager; }
+#endif
 
 	void WaitForStart();
 	void UpdateView();
@@ -100,16 +93,16 @@ private:	// Thread Pool Resource
 	// ReadThread
 	struct FileReadTaskQueue
 	{
-		static bool CompareFileReadTask(FileReadTask* lhs, FileReadTask* rhs)
+		static bool CompareFileReadTask_1(FileReadTask* lhs, FileReadTask* rhs)
 		{
-			if (lhs->_precursor == rhs->_precursor)
+			if (lhs->_plod == rhs->_plod)
 				return false;
 			else
 				return lhs->_frameNumberLastRequest < rhs->_frameNumberLastRequest;
 		};
 		FileReadTaskQueue(int32 maxSize = 200)
 		{
-			func_compare = CompareFileReadTask;
+			func_compare = CompareFileReadTask_1;
 			_maxSize = maxSize;
 			_requestOnce = std::set<FileReadTask*, decltype(func_compare)>(func_compare);
 			_requestRepeatedly = std::set<FileReadTask*, decltype(func_compare)>(func_compare);
@@ -130,7 +123,8 @@ private:	// Thread Pool Resource
 	// CleanThread
 	std::mutex _cleanMutex;
 	std::list<Model*> _waitForCleanModels;
-
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION >= 27
 	FODSCManager* _pODSCManager;
+#endif
 };
 

@@ -23,9 +23,11 @@ public:
 	void Reload();
 
 	void AddChild(uint32 index, PagedLOD* child);
-	std::string GetName();
+	const std::string& GetName();
+	std::string GetName() const;
 
 	bool operator <<(const Geometry& rhs) const;
+	bool operator == (const PagedLOD& rhs) const;
 
 	void MakeGeometryVisible(int32 index);
 	void MakeGeometryHide(int32 index);

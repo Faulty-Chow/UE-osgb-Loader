@@ -6,9 +6,6 @@
 #include <mutex>
 #include <condition_variable>
 
-extern std::mutex GameThreadWaitFor;
-extern std::condition_variable GameThreadCondition;
-
 #define _LOG_ALLOW 1
 
 #if _LOG_ALLOW

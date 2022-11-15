@@ -3,30 +3,45 @@
 #include "../Database/Geometry"
 #include "../Database/PagedLOD"
 #include "../Instance/Pawn"
+#include "../ThreadPool/RuntimeOsgbLoaderThreadPool"
 
-bool DataCleanThread::SetTask(void* task)
+void ModelCleanTask::Execute()
 {
-	if (!_bFinish.load())
-		return false;
-	_task = static_cast<Model*>(task);
-	_bFinish.exchange(_task != nullptr);
-	return _bFinish.load();
+	check(_model);
+	// check(Pawn::GetCurrentPawn()->IsVaild());
+	_frameNumber = Pawn::GetCurrentPawn()->GetFrameNumber();
+	DFS_CleanLODTree(_model->_root);
 }
 
-void DataCleanThread::ExecuteTask()
-{
-	DFS_CleanLODTree(_task->_root);
-}
-
-void DataCleanThread::DFS_CleanLODTree(PagedLOD* plod)
+void ModelCleanTask::DFS_CleanLODTree(class PagedLOD* plod)
 {
 	if (plod == nullptr)
 		return;
 
-	for (Geometry* geometry : plod->_geometries)
-		if (_frameNumber - geometry->_lastFrameNumberActive > _cleanFrameout)
-			CleanGeometry(geometry);
+	if (!plod->_bActive && plod->_bNeedReload == false &&
+		_frameNumber - plod->_lastFrameUsed > _cleanFrameout)
+	{
+		plod->Release();
+	}
 
 	for (PagedLOD* child : plod->_children)
 		DFS_CleanLODTree(child);
+}
+
+DataCleanThread::DataCleanThread(RuntimeOsgbLoaderThreadPool* threadPool, FString threadName) :
+	TaskThread(threadPool, threadName)
+{
+}
+
+bool DataCleanThread::ReturnToPool()
+{
+	check(_task == nullptr);
+	/*ModelCleanTask* newTask = dynamic_cast<RuntimeOsgbLoaderThreadPool*>(_pThreadPool)->GetCleanModelTask();
+	if (newTask)
+	{
+		_task = newTask;
+		return false;
+	}
+	else*/
+		return true;
 }

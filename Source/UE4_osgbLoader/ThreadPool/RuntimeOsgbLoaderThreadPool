@@ -1,0 +1,71 @@
+#pragma once
+#include "BaseThreadPool"
+#include "../Thread/TaskThread"
+
+#include <string>
+#include <vector>
+#include <list>
+#include <mutex>
+
+class RuntimeOsgbLoaderThreadPool final :public BaseThreadPool
+{
+	friend class ThreadPoolManager;
+	typedef volatile bool RuntimeFlag;
+public:
+	RuntimeOsgbLoaderThreadPool(std::string rootDir,
+		uint32 numLODTreeUpdateThread = 8,
+		uint32 numDataCleanThread = 4,
+		uint32 numFileReadThread = 4,
+		uint32 numShaderCompileThread = 1);
+
+	~RuntimeOsgbLoaderThreadPool();
+
+	virtual bool Create();
+
+	virtual void Destroy();
+
+	virtual FEvent* Tick();
+
+	virtual bool ReturnToPoolOrGetNewTask(BaseThread* pThread) override;
+
+	void ResumeGameThread();
+	__forceinline const std::string& GetRootDir() const { return _rootDir; }
+
+	void RequestPrepareNextFrame();
+	void RequestCleanModel(class Model* model);
+	void RequestCompilePagedLOD(class PagedLOD* plod);
+	void RequestNodeFile(class FileReadTask* fileReadTask);
+
+	__forceinline RuntimeFlag GetRuntimeFlag() const { return _bTimeToDie; }
+	
+private:
+	std::string _rootDir;
+	RuntimeFlag _bTimeToDie;
+
+	FEvent* _pStartEvent;
+	FEvent* _gameThreadPauseEvent;
+
+	uint32 _numLODTreeUpdateThread;
+	std::vector<class LODTreeUpdateThread*> _LODTreeUpdateThreadPool;
+	uint32 _numDataCleanThread;
+	std::vector<class DataCleanThread*> _DataCleanThreadPool;
+	uint32 _numFileReadThread;
+	std::vector<class FileReadThread*> _FileReadThreadPool;
+	uint32 _numShaderCompileThread;
+	std::vector<class ShaderCompileThread*> _ShaderCompileThreadPool;
+
+	std::mutex _updateTaskMutex;
+	int32 _updateTaskIndex;
+
+	// Clean Model Queue
+	std::mutex _cleanTaskMutex;
+	std::list<class Model*> _waitForCleanModels;
+
+	// Compile Model Queue
+	TQueue<class PagedLOD*> _waitToCompilePlods;
+
+	struct FileReadTaskQueue* _fileReadRequestQueue;
+
+private:
+	ThreadPoolManager* _pThreadPoolManager;
+};

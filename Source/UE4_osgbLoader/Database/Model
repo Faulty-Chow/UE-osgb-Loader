@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 
+#include <osg/Node>
 #include <osg/ref_ptr>
 #include <osg/observer_ptr>
 
@@ -28,10 +29,13 @@ public:
 	};
 
 	Model(std::string folderPath);
+	Model(std::string folderPath, osg::Node* root);
 	~Model();
 
 public:
 	void UpdateGeometries();
+
+	bool _isVaild;
 
 	std::string _folderPath;
 	PagedLOD* _root;
@@ -41,4 +45,6 @@ public:
 	std::set<Geometry*> _visibleGeometries;
 
 	int64 _frameNumberLastClean;
+
+	class FileReadTask* _fileReadTask;
 };

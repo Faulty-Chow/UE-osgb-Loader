@@ -18,13 +18,19 @@ class UE4_OSGBLOADER_API AMyRuntimeMeshActor : public AActor
 public:
 	AMyRuntimeMeshActor();
 	UMaterialInterface* _defaultMaterial;
+	static UMaterialInterface* GetDefaultMaterial();
+
 private:
-#if USE_RuntimeMeshComponent
-	class URuntimeMeshComponentStatic* _runtimeMeshComponentStatic;
-#else
-private:
-	class UProceduralMeshComponent* _proceduralMeshComponent;
-#endif
+	UPROPERTY(EditAnywhere)
+		class URuntimeMeshComponentStatic* _runtimeMeshComponentStatic;
+//#if USE_RuntimeMeshComponent
+//	UPROPERTY(EditAnywhere)
+//	class URuntimeMeshComponentStatic* _runtimeMeshComponentStatic;
+//#else
+//private:
+//	class UProceduralMeshComponent* _proceduralMeshComponent;
+//#endif
+
 public:
 	void SetupMaterialSlot(MeshSection* meshSection);
 	void CreateSectionFromComponents(MeshSection* meshSection);

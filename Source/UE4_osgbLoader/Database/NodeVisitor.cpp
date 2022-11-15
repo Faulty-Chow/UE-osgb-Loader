@@ -1,7 +1,6 @@
 #include "NodeVisitor"
 #include "Geometry"
 #include "PagedLOD"
-#include "../Instance/OsgbLoaderThreadPool"
 
 #include <osg/Geode>
 #include <osg/Geometry>
@@ -71,11 +70,11 @@ void GeometryVisitor::apply(osg::Geode& geode)
 	_boundingSphere = geode.getBound();
 	for (size_t t = 0; t < geode.getNumDrawables(); t++)
 	{
-		MeshSection* meshSection = new MeshSection;
-		int indexOffset = meshSection->_vertices->Num();
 		osg::ref_ptr<osg::Geometry> drawable = dynamic_cast<osg::Geometry*>(geode.getDrawable(t));
 		if (drawable.valid())
 		{
+			MeshSection* meshSection = new MeshSection;
+
 			osg::ref_ptr<osg::Vec3Array> vertexArray = dynamic_cast<osg::Vec3Array*>(drawable->getVertexArray());
 			osg::ref_ptr<osg::Vec3Array> normalArray = dynamic_cast<osg::Vec3Array*>(drawable->getNormalArray());
 			osg::ref_ptr<osg::Texture2D> texture = dynamic_cast<osg::Texture2D*>(drawable->getStateSet()->getTextureAttribute(0, osg::StateAttribute::TEXTURE));
@@ -98,7 +97,7 @@ void GeometryVisitor::apply(osg::Geode& geode)
 					channels = 1;
 					break;
 				}
-				meshSection->_textureData= new unsigned char[meshSection->_rows * meshSection->_cols * 4];
+				meshSection->_textureData = new unsigned char[meshSection->_rows * meshSection->_cols * 4];
 				check(meshSection->_textureData);
 
 				int pSrc = 0, pDst = 0;

@@ -1,11 +1,11 @@
-﻿#include "OsgbLoaderThreadPool"
+﻿#include "OsgbLoaderThreadPool_Deprecated"
 #include "../Database/Model"
 #include "../Database/Geometry"
 #include "../Database/PagedLOD"
-#include "Pawn"
+#include "../Instance/Pawn"
 #include "../Database/NodeVisitor"
-#include "RuntimeMeshSubsystem.h"
-#include "MyRuntimeMeshActor.h"
+#include "../Instance/RuntimeMeshSubsystem.h"
+#include "../Instance/MyRuntimeMeshActor.h"
 
 #include <string>
 #include <io.h>
@@ -14,7 +14,9 @@
 #include <osgDB/ReadFile>
 
 #include "Materials/MaterialInterface.h"
+#if ENGINE_MAJOR_VERSION >= 4 && ENGINE_MINOR_VERSION >= 27
 #include "ODSC/ODSCManager.h"
+#endif
 
 #ifdef _MSVC_LANG
 #if _MSVC_LANG < 201703L		// C++17
@@ -22,65 +24,65 @@ OsgbLoaderThreadPool* OsgbLoaderThreadPool::Instance = nullptr;
 #endif
 #endif
 
-class BaseThread : public FRunnable
-{
-public:
-	BaseThread() :
-		_bDone(true), _bActive(false), _bKill(false) {}
-	virtual bool Create(FString threadName, uint32 stackSize = (1024 * 3), EThreadPriority threadPriority = TPri_Normal)
-	{
-		_pThread = FRunnableThread::Create(this, *threadName, stackSize, threadPriority, FPlatformAffinity::GetPoolThreadMask());
-		check(_pThread);
-		return true;
-	}
-	void KillThread(bool bShouldWait = true)
-	{
-		_pThread->Suspend(true);
-		_bKill = true;
-		_pThread->Suspend(false);
-		if (bShouldWait)
-			_pThread->WaitForCompletion();
-		_pThread->Kill(bShouldWait);
-		_bActive.exchange(false);
-	}
-	void Pause()
-	{
-		if (_bActive.load())
-		{
-			_pThread->Suspend(true);
-			_bActive.exchange(false);
-		}
-	}
-	void WakeUp()
-	{
-		if (!_bActive.load())
-		{
-			_bActive.exchange(true);
-			_pThread->Suspend(false);
-		}
-	}
-	bool DoTask(void* pTask)
-	{
-		check(_bDone);
-		_pTask = pTask;
-		WakeUp();
-	}
-
-protected:
-	virtual uint32 Run() override;
-	virtual ~BaseThread()
-	{
-		delete _pThread;
-	}
-
-protected:
-	FRunnableThread* _pThread;
-	void* _pTask;
-
-	volatile bool _bDone;
-	std::atomic_bool _bActive;
-	volatile bool _bKill;
-};
+//class BaseThread : public FRunnable
+//{
+//public:
+//	BaseThread() :
+//		_bDone(true), _bActive(false), _bKill(false) {}
+//	virtual bool Create(FString threadName, uint32 stackSize = (1024 * 3), EThreadPriority threadPriority = TPri_Normal)
+//	{
+//		_pThread = FRunnableThread::Create(this, *threadName, stackSize, threadPriority, FPlatformAffinity::GetPoolThreadMask());
+//		check(_pThread);
+//		return true;
+//	}
+//	void KillThread(bool bShouldWait = true)
+//	{
+//		_pThread->Suspend(true);
+//		_bKill = true;
+//		_pThread->Suspend(false);
+//		if (bShouldWait)
+//			_pThread->WaitForCompletion();
+//		_pThread->Kill(bShouldWait);
+//		_bActive.exchange(false);
+//	}
+//	void Pause()
+//	{
+//		if (_bActive.load())
+//		{
+//			_pThread->Suspend(true);
+//			_bActive.exchange(false);
+//		}
+//	}
+//	void WakeUp()
+//	{
+//		if (!_bActive.load())
+//		{
+//			_bActive.exchange(true);
+//			_pThread->Suspend(false);
+//		}
+//	}
+//	bool DoTask(void* pTask)
+//	{
+//		check(_bDone);
+//		_pTask = pTask;
+//		WakeUp();
+//	}
+//
+//protected:
+//	virtual uint32 Run() override;
+//	virtual ~BaseThread()
+//	{
+//		delete _pThread;
+//	}
+//
+//protected:
+//	FRunnableThread* _pThread;
+//	void* _pTask;
+//
+//	volatile bool _bDone;
+//	std::atomic_bool _bActive;
+//	volatile bool _bKill;
+//};
 
 class UpdateThread : public FRunnable
 {
@@ -239,7 +241,7 @@ private:
 				bCulling = !Pawn::GetCurrentPawn()->IsBoundOnView(geometry->_boundingSphere);
 			else
 				bCulling = false;
-			if (!bCulling)	
+			if (!bCulling)
 			{
 				// 在视锥体内
 				if (pixelInSize < geometry->_threshold)	// 满足渲染条件
@@ -353,7 +355,7 @@ public:
 private:
 	virtual bool Init() override { return FRunnable::Init(); }
 	PRAGMA_DISABLE_OPTIMIZATION
-	virtual uint32 Run() override
+		virtual uint32 Run() override
 	{
 		OsgbLoaderThreadPool::GetInstance()->WaitForStart();
 		// _bActive.exchange(true);
@@ -386,7 +388,7 @@ private:
 		return 0;
 	}
 	PRAGMA_ENABLE_OPTIMIZATION
-	virtual void Stop() override
+		virtual void Stop() override
 	{
 		_bDone = true;
 		_bActive = (false);
@@ -442,21 +444,21 @@ class ReadThread : public FRunnable
 					meshSection->_material = UMaterialInstanceDynamic::Create(
 						OsgbLoaderThreadPool::GetInstance()->GetDefaultMaterial(), OsgbLoaderThreadPool::GetInstance()->GetWorld(), NAME_None);
 					//meshSection->_material->SetTextureParameterValue("Param", meshSection->_texture);
-					OsgbLoaderThreadPool::GetInstance()->GetRuntimeMeshActor()->SetupMaterialSlot(meshSection);
+					URuntimeMeshSubsystem::GetRuntimeMeshSubsystem()->SetupMaterialSlot(meshSection);
 				}
 			}
 			OsgbLoaderThreadPool::GetInstance()->FinishStructureAndMountToModel(_newPagedLOD);
 		}
 	private:
 		PagedLOD* _newPagedLOD;
-//#ifdef _MSVC_LANG
-//#if _MSVC_LANG >= 201703L		// C++17
-//		static __forceinline UMaterialInterface* Material = Cast<UMaterialInterface>(
-//			StaticLoadObject(UMaterialInterface::StaticClass(), nullptr, TEXT("Material'/Game/NewMaterial.NewMaterial'")));
-//#else
-//		static UMaterialInterface* Material;
-//#endif
-//#endif
+		//#ifdef _MSVC_LANG
+		//#if _MSVC_LANG >= 201703L		// C++17
+		//		static __forceinline UMaterialInterface* Material = Cast<UMaterialInterface>(
+		//			StaticLoadObject(UMaterialInterface::StaticClass(), nullptr, TEXT("Material'/Game/NewMaterial.NewMaterial'")));
+		//#else
+		//		static UMaterialInterface* Material;
+		//#endif
+		//#endif
 	};
 
 public:
@@ -484,7 +486,7 @@ public:
 	{
 		if (_bDone || _bActive)
 			return;
-		_bActive = true;
+		//_bActive = true;
 		// FPlatformMisc::MemoryBarrier();
 		_pThread->Suspend(false);
 	}
@@ -499,37 +501,42 @@ private:
 	virtual bool Init() override { return FRunnable::Init(); }
 	virtual uint32 Run() override
 	{
+		_bActive = false;
 		OsgbLoaderThreadPool::GetInstance()->WaitForStart();
-		_bActive = true;
 		do
 		{
 			if (OsgbLoaderThreadPool::GetInstance()->ReturnToPool(this))
 			{
-				_bActive = false;
+				// _bActive = false;
 				_pThread->Suspend(true);
 			}
 			else
 			{
 				check(_task != nullptr);
+				_bActive = true;
 				osg::ref_ptr<osg::Node> node = osgDB::readNodeFile(_task->_filePath);
-				// UE_LOG(LogTemp, Warning, TEXT("ReadNodeFile: %s"), *FString(_task->_filePath.c_str()));
+				UE_LOG(LogTemp, Warning, TEXT("ReadFile: %s"), *FString(_task->_filePath.c_str()));
 				if (node != nullptr)
 				{
 					if (_task->_bReload)
 					{
-						PagedLODVisitor plodVisitor(_task->_precursor->_owner->_children[_task->_precursor->_index], true);
+						PagedLODVisitor plodVisitor(_task->_plod, true);
 						node->accept(plodVisitor);
-						_task->_precursor->_owner->_children[_task->_precursor->_index]->_bNeedReload = false;
+						_task->_plod->_bNeedReload = false;
 					}
 					else
 					{
-						PagedLOD* newPlod = new PagedLOD(_task->_precursor);
-						PagedLODVisitor plodVisitor(newPlod);
+						PagedLODVisitor plodVisitor(_task->_plod);
 						node->accept(plodVisitor);
-						TGraphTask<SpawnTextureAndMaterial>::CreateTask().ConstructAndDispatchWhenReady(newPlod);
+						TGraphTask<SpawnTextureAndMaterial>::CreateTask().ConstructAndDispatchWhenReady(_task->_plod);
 					}
 				}
+				else
+				{
+					UE_LOG(LogTemp, Error, TEXT("FileRead Error: %s"), *FString(_task->_filePath.c_str()));
+				}
 				_task = nullptr;
+				_bActive = false;
 			}
 		} while (!_bDone);
 		return 0;
@@ -576,7 +583,7 @@ public:
 	{
 		if (_bDone || _bActive)
 			return;
-		_bActive = true;
+		// _bActive = true;
 		// FPlatformMisc::MemoryBarrier();
 		_pThread->Suspend(false);
 	}
@@ -591,18 +598,19 @@ private:
 	virtual bool Init() override { return FRunnable::Init(); }
 	virtual uint32 Run() override
 	{
+		_bActive = false;
 		OsgbLoaderThreadPool::GetInstance()->WaitForStart();
-		_bActive = true;
 		do
 		{
 			if (OsgbLoaderThreadPool::GetInstance()->ReturnToPool(this))
 			{
-				_bActive = false;
+				//_bActive = false;
 				_pThread->Suspend(true);
 			}
 			else
 			{
 				check(_plod != nullptr);
+				_bActive = true;
 				//TArray<FString> materialsToCompile;
 				for (auto geometry : _plod->_geometries)
 				{
@@ -611,33 +619,40 @@ private:
 						uint8* MipData = static_cast<uint8*>(meshSection->_texture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
 						FMemory::Memcpy(MipData, meshSection->_textureData, meshSection->_cols * meshSection->_rows * 4);
 						meshSection->_texture->PlatformData->Mips[0].BulkData.Unlock();
+#if ENGINE_MAJOR_VERSION == 4
 						meshSection->_texture->UpdateResource();
 						meshSection->_material->SetTextureParameterValue("Param", meshSection->_texture);
+#endif
 						//materialsToCompile.Emplace(meshSection->_material->GetName());
 						delete meshSection->_textureData;
 						meshSection->_textureData = nullptr;
 					}
 				}
-				//FFunctionGraphTask::CreateAndDispatchWhenReady(
-				//	[plod = _plod](void) ->void
-				//	{
-				//		for (auto geometry : plod->_geometries)
-				//		{
-				//			for (auto meshSection : *geometry->_meshSections)
-				//			{
-				//				//meshSection->_texture->UpdateResource();
-				//				//meshSection->_material->SetTextureParameterValue("Param", meshSection->_texture);
-				//				//OsgbLoaderThreadPool::GetInstance()->GetRuntimeMeshActor()->SetupMaterialSlot(meshSection);
-				//			}
-				//		}
-				//		check(plod->_parent);
-				//		plod->_parent->AddChild(plod->_index, plod);
-				//	},
-				//	TStatId(), nullptr, ENamedThreads::GameThread);
+#if ENGINE_MAJOR_VERSION == 5
+				FFunctionGraphTask::CreateAndDispatchWhenReady(
+					[plod = _plod](void) ->void
+					{
+						for (auto geometry : plod->_geometries)
+						{
+							for (auto meshSection : *geometry->_meshSections)
+							{
+								meshSection->_texture->UpdateResource();
+								meshSection->_material->SetTextureParameterValue("Param", meshSection->_texture);
+								// OsgbLoaderThreadPool::GetInstance()->GetRuntimeMeshActor()->SetupMaterialSlot(meshSection);
+							}
+						}
+						check(plod->_parent);
+						plod->_parent->AddChild(plod->_index, plod);
+					},
+					TStatId(), nullptr, ENamedThreads::GameThread);
+#endif
 				// OsgbLoaderThreadPool::GetInstance()->GetODSCManager()->AddThreadedRequest(materialsToCompile, EShaderPlatform::SP_PCD3D_SM5, true);
+#if ENGINE_MAJOR_VERSION == 4
 				check(_plod->_parent);
 				_plod->_parent->AddChild(_plod->_index, _plod);
+#endif
 				_plod = nullptr;
+				_bActive = false;
 			}
 		} while (!_bDone);
 		return 0;
@@ -671,7 +686,9 @@ UWorld* OsgbLoaderThreadPool::GetWorld()
 OsgbLoaderThreadPool::OsgbLoaderThreadPool(URuntimeMeshSubsystem* runtimeMeshSubsystem) :
 	_runtimeMeshSubsystem(runtimeMeshSubsystem)
 {
-	_pODSCManager=new FODSCManager();
+#if ENGINE_MAJOR_VERSION >= 4 && ENGINE_MINOR_VERSION >= 27
+	_pODSCManager = new FODSCManager();
+#endif
 }
 
 OsgbLoaderThreadPool::~OsgbLoaderThreadPool()
@@ -689,14 +706,18 @@ void OsgbLoaderThreadPool::LoadModels()
 	long long handle = 0;
 	struct _finddata_t fileinfo;
 	std::string temp_str;
-	if ((handle = _findfirst(temp_str.assign(_runtimeMeshSubsystem->_databasePath).append("\\*").c_str(), &fileinfo)) != -1)
+	if ((handle = _findfirst(temp_str.assign(_runtimeMeshSubsystem->GetDatabasePath()).append("\\*").c_str(), &fileinfo)) != -1)
 	{
 		do
 		{
 			if ((fileinfo.attrib & _A_SUBDIR))
 				if (strcmp(fileinfo.name, ".") != 0 && strcmp(fileinfo.name, "..") != 0)
 				{
-					_models.push_back(new Model(_runtimeMeshSubsystem->_databasePath + "\\" + fileinfo.name));
+					Model* model = new Model(_runtimeMeshSubsystem->GetDatabasePath() + "\\" + fileinfo.name);
+					if (model->_isVaild)
+						_models.push_back(model);
+					else
+						delete model;
 				}
 		} while (_findnext(handle, &fileinfo) == 0);
 	}
@@ -833,7 +854,7 @@ bool OsgbLoaderThreadPool::FileReadTaskQueue::Dequeue(FileReadTask*& request)
 	}
 	else
 	{
-		request =*_requestOnce.begin();
+		request = *_requestOnce.begin();
 		_requestOnce.erase(_requestOnce.begin());
 		request->_bAllowLoad = false;
 	}
@@ -891,7 +912,7 @@ bool OsgbLoaderThreadPool::ReturnToPool(UpdateThread* pThread)
 		if (_drawUpComplete.load() == _numUpdateThreads)
 		{
 			std::unique_lock <std::mutex> lock_(::GameThreadWaitFor);
-			::GameThreadCondition.notify_all();
+			::GameThreadResumeCondition.notify_all();
 		}
 		return true;
 	}
@@ -987,13 +1008,13 @@ bool OsgbLoaderThreadPool::ReturnToPool(ReadThread* pThread)
 
 UMaterialInterface* OsgbLoaderThreadPool::GetDefaultMaterial()
 {
-	return _runtimeMeshSubsystem->_mRuntimeMeshActor->_defaultMaterial;
+	return _runtimeMeshSubsystem->GetDefaultMaterial();
 }
 
-AMyRuntimeMeshActor* OsgbLoaderThreadPool::GetRuntimeMeshActor()
-{
-	return _runtimeMeshSubsystem->_mRuntimeMeshActor;
-}
+//AMyRuntimeMeshActor* OsgbLoaderThreadPool::GetRuntimeMeshActor()
+//{
+//	return _runtimeMeshSubsystem->getMyRuntimeMeshActor();
+//}
 
 void OsgbLoaderThreadPool::WaitForStart()
 {

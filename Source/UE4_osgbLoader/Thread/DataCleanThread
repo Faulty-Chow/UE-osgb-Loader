@@ -1,23 +1,31 @@
 #pragma once
-#include "BaseThread"
+#include "TaskThread"
 
-class DataCleanThread :public BaseThread
+class ModelCleanTask final :public BaseTask
 {
 public:
-	virtual bool SetTask(void* task) override;
+	ModelCleanTask(class Model* model, int64 cleanFrameout = 300) :
+		_model(model), _frameNumber(-1), _cleanFrameout(cleanFrameout) {}
+
+	virtual void Execute() override;
+	virtual void Abandon() {};
 
 private:
-	virtual void ExecuteTask() override;
 	void DFS_CleanLODTree(class PagedLOD* plod);
-	void CleanGeometry(class Geometry* geometry){}
 
+private:
+	class Model* _model;
 
-	class Model* _task;
 	int64 _frameNumber;
 	int64 _cleanFrameout;
 };
 
-class DataCleanManager
+class DataCleanThread final :public TaskThread
 {
+public:
+	DataCleanThread(class RuntimeOsgbLoaderThreadPool* threadPool, FString threadName);
 
+private:
+	virtual bool ReturnToPool() override;
+	
 };

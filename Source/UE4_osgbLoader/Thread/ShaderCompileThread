@@ -1,20 +1,26 @@
 #pragma once
-#include "BaseThread"
-#include "Misc/SingleThreadRunnable.h"
-#include "GenericPlatform/GenericPlatformFile.h"
-#include "Containers/Queue.h"
-#include "ShaderCompiler.h"
-#include "RHIDefinitions.h"
+#include "TaskThread"
 
-class ShaderCompileThread final :
-	public BaseThread, FSingleThreadRunnable
+class ShaderCompileTask final :public BaseTask
 {
 public:
-	virtual void Tick() override;
-	virtual bool SetTask(void* task) override;
+	ShaderCompileTask(class PagedLOD* plod) :
+		_plod(plod) {}
+
+	virtual void Execute() override;
+	virtual void Abandon() override {}
 
 private:
-	virtual void ExecuteTask() override;
+	class PagedLOD* _plod;
+};
 
-	class PagedLOD* _task;
+class ShaderCompileThread final :public TaskThread/*, FSingleThreadRunnable*/
+{
+	friend class ShaderCompileTask;
+public:
+	ShaderCompileThread(class RuntimeOsgbLoaderThreadPool* pThreadPool, FString threadName);
+	// virtual void Tick() override;
+
+private:
+	virtual bool ReturnToPool() override;
 };

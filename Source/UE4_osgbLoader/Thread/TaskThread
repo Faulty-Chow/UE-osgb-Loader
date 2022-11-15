@@ -1,0 +1,28 @@
+#pragma once
+#include "BaseThread"
+
+class BaseTask
+{
+public:
+	virtual void Execute() = 0;
+	virtual void Abandon() = 0;
+};
+
+class TaskThread :public BaseThread
+{
+public:
+	TaskThread(class BaseThreadPool* pThreadPool, FString threadName);
+
+	void StartThread() = delete;
+
+	__forceinline const BaseTask* GetTask() const { return _task; }
+	bool SetTask(BaseTask* task);
+
+protected:
+	virtual uint32 Run() override;
+	virtual bool ReturnToPool() = 0;
+
+protected:
+	class BaseThreadPool* _pThreadPool;
+	BaseTask* _task;
+};

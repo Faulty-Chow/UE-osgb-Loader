@@ -19,7 +19,6 @@ struct FRuntimeMeshTangent;
 class UTexture2D;
 class UMaterialInstanceDynamic;
 class PagedLOD;
-struct FileReadTask;
 
 struct MeshSection
 {
@@ -101,7 +100,7 @@ public:
 	int32 _index;
 	float _threshold;
 	osg::BoundingSphere _boundingSphere;
-	FileReadTask* _fileReadRequest;
+	class FileReadTask* _fileReadRequest;
 
 	std::vector<MeshSection*>* _meshSections;
 

@@ -1,49 +1,34 @@
 #pragma once
-#include "BaseThread"
+#include "TaskThread"
 #include <functional>
 #include <set>
 
-//struct FileReadTask
-//{
-//	enum TaskType
-//	{
-//		ReloadSelf,
-//		LoadSuccessor
-//	};
-//	FileReadTask(class Geometry* geometry, TaskType type) :
-//		_geometry(geometry), _type(type) {}
-//	class Geometry* _geometry;
-//	TaskType _type;
-//	bool _bTakeIn;
-//};
-//
-//class FileReadThread :public BaseThread
-//{
-//public:
-//	virtual bool SetTask(void* task) override;
-//
-//private:
-//	virtual void ExecuteTask() override;
-//
-//	FileReadTask* _task;
-//};
-//
-//struct FileReadTaskQueue
-//{
-//	static bool CompareFileReadTask(FileReadTask* lhs, FileReadTask* rhs);
-//	FileReadTaskQueue(int32 maxSize = 200);
-//	void Enqueue(FileReadTask*& request);
-//	bool Dequeue(FileReadTask*& request);
-//	void Clear();
-//
-//	std::function<bool(FileReadTask*, FileReadTask*)> func_compare;
-//	int32 _maxSize;
-//	std::mutex _requestMutex;
-//	std::set<FileReadTask*, decltype(func_compare)> _requestOnce;
-//	std::set<FileReadTask*, decltype(func_compare)> _requestRepeatedly;
-//};
-//
-//class FileReadManager
-//{
-//
-//};
+class FileReadTask final :public BaseTask
+{
+public:
+	FileReadTask(class PagedLOD* plod, std::string filePath) :
+		_frameNumberLastRequest(-1), _plod(plod),
+		_filePath(filePath), _bAllowLoad(true), _bReload(false) {}
+	virtual void Execute() override;
+	virtual void Abandon() {}
+	bool operator < (const FileReadTask& rhs) const;
+	bool operator == (const FileReadTask& rhs) const;
+
+public:
+	int64 _frameNumberLastRequest;
+	class PagedLOD* _plod;
+	std::string _filePath;
+	bool _bAllowLoad;
+	bool _bReload;
+};
+
+class FileReadThread :public TaskThread
+{
+	friend class FileReadTask;
+public:
+	FileReadThread(class RuntimeOsgbLoaderThreadPool* pThreadPool, FString threadName);
+
+private:
+	virtual bool ReturnToPool() override;
+
+};

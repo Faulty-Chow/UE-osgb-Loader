@@ -2,7 +2,7 @@
 
 BaseThread::BaseThread(FString threadName) :
 	_threadName(threadName), _bDead(false), _bActive(false), _bFinish(true),
-	_pThread(nullptr), _pStartEvent(nullptr), _pWakeupEvent(nullptr)
+	_pThread(nullptr), _pStartEvent(nullptr)
 {
 }
 
@@ -12,7 +12,7 @@ bool BaseThread::Create(FEvent* pStartEvent, uint32 stackSize /*= (32 * 1024)*/,
 	_pThread = FRunnableThread::Create(this, *_threadName, stackSize, threadPriority);
 	if (_pThread)
 	{
-		_pWakeupEvent = FPlatformProcess::GetSynchEventFromPool(true);
+		UE_LOG(LogTemp, Warning, TEXT("Create %s"), *_threadName);
 		return true;
 	}
 	return false;
@@ -20,47 +20,32 @@ bool BaseThread::Create(FEvent* pStartEvent, uint32 stackSize /*= (32 * 1024)*/,
 
 void BaseThread::StartThread()
 {
-	check(_pThread);
-	_bActive.exchange(true);
-	_pStartEvent->Trigger();
-	_pStartEvent = nullptr;
+	if (_pStartEvent)
+	{
+		check(_pThread);
+		_pStartEvent->Trigger();
+		_pStartEvent = nullptr;
+	}
 }
 
 void BaseThread::StopThread(bool bShouldWait /*= true*/)
 {
-	_bDead.exchange(true);
-	Wakeup();
+	_bDead.store(true);
+	_pThread->Suspend(false);
 	_pThread->Kill(bShouldWait);
-	delete _pThread;
-	_pThread = nullptr;
+	_bActive.store(false);
 }
 
 void BaseThread::Wakeup()
 {
-	if (_bDead.load() == true)
+	if (_bDead.load() == true || _bActive.load())
 		return;
-	if (_bActive.load() == false)
-	{
-		_bActive.exchange(true);
-		_pWakeupEvent->Trigger();
-	}
+	UE_LOG(LogTemp, Warning, TEXT("Wakeup Thread: %s"), *_threadName);
+	_pThread->Suspend(false);
 }
 
 BaseThread::~BaseThread()
 {
-	StopThread();
-
-	FPlatformProcess::ReturnSynchEventToPool(_pWakeupEvent);
-	_pWakeupEvent = nullptr;
-}
-
-uint32 BaseThread::Run()
-{
-	_pStartEvent->Wait();
-	_bActive.exchange(true);
-	while (!_bDead.load())
-	{
-
-	}
-	return 0;
+	delete _pThread;
+	_pThread = nullptr;
 }

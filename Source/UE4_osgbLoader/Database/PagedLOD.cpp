@@ -2,8 +2,8 @@
 #include "Geometry"
 #include "Model"
 #include "NodeVisitor"
-#include "../Instance/MyRuntimeMeshActor.h"
-#include "../Instance/OsgbLoaderThreadPool"
+#include "../Instance/RuntimeMeshSubsystem.h"
+#include "../Thread/FileReadThread"
 
 #include "Kismet/KismetSystemLibrary.h"
 
@@ -11,46 +11,18 @@
 #include <osgDB/ReadFile>
 
 PagedLOD::PagedLOD(Model* owner) :
-	_owner(owner), _parent(nullptr), _index(-1), _bActive(false), _bNeedReload(false)
+	_owner(owner), _parent(nullptr), _index(-1), _bActive(0), _bNeedReload(false)
 {
-	check(IsInGameThread());
-	_lastFrameUsed= UKismetSystemLibrary::GetFrameCount();
-
-	std::string filePath = _owner->_folderPath + "\\" + GetName() + ".osgb";
-	osg::Node* node = osgDB::readNodeFile(filePath);
-	if (node != nullptr)
-	{
-		PagedLODVisitor plodVisitor(this);
-		node->accept(plodVisitor);
-		for (auto geometry : _geometries)
-		{
-			for (auto meshSection : *geometry->_meshSections)
-			{
-				meshSection->_texture = UTexture2D::CreateTransient(
-					meshSection->_cols, meshSection->_rows, PF_B8G8R8A8);
-				meshSection->_material = UMaterialInstanceDynamic::Create(
-					OsgbLoaderThreadPool::GetInstance()->GetDefaultMaterial(), OsgbLoaderThreadPool::GetInstance()->GetWorld(), NAME_None);
-				OsgbLoaderThreadPool::GetInstance()->GetRuntimeMeshActor()->SetupMaterialSlot(meshSection);
-				uint8* MipData = static_cast<uint8*>(meshSection->_texture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
-				FMemory::Memcpy(MipData, meshSection->_textureData, meshSection->_cols * meshSection->_rows * 4);
-				meshSection->_texture->PlatformData->Mips[0].BulkData.Unlock();
-				meshSection->_texture->UpdateResource();
-				meshSection->_material->SetTextureParameterValue("Param", meshSection->_texture);
-				delete meshSection->_textureData;
-				meshSection->_textureData = nullptr;
-			}
-		}
-	}
-	else
-		UE_LOG(LogTemp, Error, TEXT("New PagedLOD faild by readNodeFile()."));
+	_lastFrameUsed = UKismetSystemLibrary::GetFrameCount();
 }
 
 PagedLOD::PagedLOD(Geometry* precursor) :
 	_owner(precursor->_owner->_owner), _parent(precursor->_owner),
 	_index(precursor->_index), _bActive(0), _bNeedReload(false)
 {
-	_lastFrameUsed = precursor->_fileReadRequest->_frameNumberLastRequest;
+	_lastFrameUsed = UKismetSystemLibrary::GetFrameCount();
 }
+
 PagedLOD::~PagedLOD()
 {
 	for (Geometry* geometry : _geometries)
@@ -84,8 +56,9 @@ void PagedLOD::AddChild(uint32 index, PagedLOD* child)
 
 void PagedLOD::Release()
 {
+	if (!_parent)	return;
 	_bNeedReload = true;
-	UE_LOG(LogTemp, Error, TEXT("Release PagedLOD: %s"), *FString(GetName().c_str()));
+	// UE_LOG(LogTemp, Error, TEXT("Release PagedLOD: %s"), *FString(GetName().c_str()));
 	for (Geometry* geometry : _geometries)
 	{
 		for (MeshSection* meshSection : *geometry->_meshSections)
@@ -107,7 +80,7 @@ void PagedLOD::Reload()
 	_parent->_geometries[_index]->LoadSuccessor();
 }
 
-std::string PagedLOD::GetName()
+const std::string& PagedLOD::GetName()
 {
 	if (_name.empty())
 	{
@@ -125,6 +98,27 @@ std::string PagedLOD::GetName()
 	return _name;
 }
 
+std::string PagedLOD::GetName() const
+{
+	std::string name;
+	if (_name.empty())
+	{
+		if (_parent == nullptr)
+		{
+			name = _owner->_folderPath.substr(_owner->_folderPath.find_last_of("\\") + 1);
+		}
+		else
+		{
+			std::string sourcePath = _parent->_geometries[_index]->_fileReadRequest->_filePath;
+			name = sourcePath.substr(sourcePath.find_last_of('\\') + 1);
+			name = _name.substr(0, _name.length() - 5);
+		}
+	}
+	else
+		name = _name;
+	return name;
+}
+
 bool PagedLOD::operator <<(const Geometry& rhs) const
 {
 	for (Geometry* geometry : _geometries)
@@ -137,11 +131,16 @@ bool PagedLOD::operator <<(const Geometry& rhs) const
 	return false;
 }
 
+bool PagedLOD::operator == (const PagedLOD& rhs) const
+{
+	return this->GetName() == rhs.GetName();
+}
+
 void PagedLOD::MakeGeometryVisible(int32 index)
 {
 	for (MeshSection* meshSection : *_geometries[index]->_meshSections)
 	{
-		OsgbLoaderThreadPool::GetInstance()->GetRuntimeMeshActor()->CreateSectionFromComponents(meshSection);
+		URuntimeMeshSubsystem::GetRuntimeMeshSubsystem()->CreateSection(meshSection);
 	}
 	_bActive |= (1 << index);
 }
@@ -150,7 +149,7 @@ void PagedLOD::MakeGeometryHide(int32 index)
 {
 	for (MeshSection* meshSection : *_geometries[index]->_meshSections)
 	{
-		OsgbLoaderThreadPool::GetInstance()->GetRuntimeMeshActor()->RemoveSectionFromComponents(meshSection);
+		URuntimeMeshSubsystem::GetRuntimeMeshSubsystem()->RemoveSection(meshSection);
 	}
 	_bActive ^= (1 << index);
 }

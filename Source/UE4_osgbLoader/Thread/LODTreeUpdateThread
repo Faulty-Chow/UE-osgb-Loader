@@ -1,0 +1,35 @@
+#pragma once
+#include "TaskThread"
+#include <vector>
+#include <set>
+
+class LODTreeUpdateTask final :public BaseTask
+{
+	friend class LODTreeUpdateThread;
+public:
+	LODTreeUpdateTask(class Model* model) :
+		_model(model) {}
+	
+	virtual void Execute() override;
+	virtual void Abandon() override {}
+
+private:
+	bool FindUseableSuccessors(class PagedLOD* plod, std::vector<class Geometry*>& successors);
+	void FindUseablePredecessor(class PagedLOD* plod, class PagedLOD*& predecessor);
+	void Traverse(class PagedLOD* plod);
+
+private:
+	class Model* _model;
+	std::set<class Geometry*> _renderNextFrame;
+	std::vector<class Geometry*> _UnuseableGeometries;
+};
+
+class LODTreeUpdateThread final :public TaskThread
+{
+public:
+	LODTreeUpdateThread(class RuntimeOsgbLoaderThreadPool* pThreadPool, FString threadName);
+
+private:
+	virtual uint32 Run() override;
+	virtual bool ReturnToPool() override;
+};

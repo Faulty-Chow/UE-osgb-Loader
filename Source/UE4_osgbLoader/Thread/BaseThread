@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 
 #include <atomic>
+#include <mutex>
 
 class BaseThread : public FRunnable
 {
@@ -11,25 +12,18 @@ public:
 	virtual ~BaseThread();
 
 public:
-#ifdef _MSVC_LANG
-#if _MSVC_LANG >= 201703L
-	[[nodiscard]]
-#endif 
-#endif
 	bool Create(FEvent* pStartEvent, uint32 stackSize = (32 * 1024), EThreadPriority threadPriority = TPri_Normal);
 	void StartThread();
 	void StopThread(bool bShouldWait = true);
 
 	void Wakeup();
-	virtual bool SetTask(void* task) = 0;
 
 	__forceinline bool IsDone() { return _bDead.load(); }
 	__forceinline bool IsActive() { return _bActive.load(); }
 	__forceinline bool IsFinish() { return _bFinish.load(); }
 
 protected:
-	virtual uint32 Run() override;
-	virtual void ExecuteTask() = 0;
+	virtual uint32 Run() override = 0;
 
 	template<typename Lambda>
 	static void DoInGameThread(Lambda&& task)
@@ -56,7 +50,6 @@ protected:
 	FString _threadName;
 	FRunnableThread* _pThread;
 
-	FEvent* _pWakeupEvent;
 	FEvent* _pStartEvent;
 
 	std::atomic_bool _bFinish;

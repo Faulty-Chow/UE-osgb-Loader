@@ -1,0 +1,21 @@
+#pragma once
+#include "CoreMinimal.h"
+#include "../Thread/BaseThread"
+
+class BaseThreadPool
+{
+public:
+	virtual
+#ifdef _MSVC_LANG
+#if _MSVC_LANG >= 201703L
+		[[nodiscard]]
+#endif 
+#endif
+	bool Create() = 0;
+
+	virtual void Destroy() = 0;
+
+	virtual FEvent* Tick() = 0;
+
+	virtual bool ReturnToPoolOrGetNewTask(BaseThread* pThread) = 0;
+};
