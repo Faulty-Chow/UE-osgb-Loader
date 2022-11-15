@@ -7,18 +7,18 @@
 #include <list>
 #include <mutex>
 
-class RuntimeOsgbLoaderThreadPool final :public BaseThreadPool
+class OsgbLoaderThreadPool final :public BaseThreadPool
 {
 	friend class ThreadPoolManager;
 	typedef volatile bool RuntimeFlag;
 public:
-	RuntimeOsgbLoaderThreadPool(std::string rootDir,
+	OsgbLoaderThreadPool(std::string rootDir,
 		uint32 numLODTreeUpdateThread = 8,
 		uint32 numDataCleanThread = 4,
 		uint32 numFileReadThread = 4,
 		uint32 numShaderCompileThread = 1);
 
-	~RuntimeOsgbLoaderThreadPool();
+	~OsgbLoaderThreadPool();
 
 	virtual bool Create();
 

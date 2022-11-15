@@ -1,7 +1,7 @@
 #include "Model"
 #include "Geometry"
 #include "PagedLOD"
-#include "../ThreadPool/RuntimeOsgbLoaderThreadPool"
+#include "../ThreadPool/OsgbLoaderThreadPool"
 #include "../Thread/FileReadThread"
 #include "../Instance/Pawn"
 #include "../Instance/RuntimeMeshSubsystem.h"

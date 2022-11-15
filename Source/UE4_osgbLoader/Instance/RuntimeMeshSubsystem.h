@@ -61,7 +61,7 @@ public:
 private:
 	std::string _databasePath;
 	AMyRuntimeMeshActor* _mRuntimeMeshActor;
-	class RuntimeOsgbLoaderThreadPool* _RuntimeOsgbLoaderThreadPool;
+	class OsgbLoaderThreadPool* _OsgbLoaderThreadPool;
 
 	std::vector<Model*> _models;
 

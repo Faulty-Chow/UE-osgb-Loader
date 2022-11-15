@@ -1,5 +1,5 @@
 #include "TaskThread"
-#include "../ThreadPool/RuntimeOsgbLoaderThreadPool"
+#include "../ThreadPool/OsgbLoaderThreadPool"
 
 TaskThread::TaskThread(class BaseThreadPool* pThreadPool, FString threadName) :
 	BaseThread(threadName), _pThreadPool(pThreadPool)

@@ -18,7 +18,7 @@ class ShaderCompileThread final :public TaskThread/*, FSingleThreadRunnable*/
 {
 	friend class ShaderCompileTask;
 public:
-	ShaderCompileThread(class RuntimeOsgbLoaderThreadPool* pThreadPool, FString threadName);
+	ShaderCompileThread(class OsgbLoaderThreadPool* pThreadPool, FString threadName);
 	// virtual void Tick() override;
 
 private:

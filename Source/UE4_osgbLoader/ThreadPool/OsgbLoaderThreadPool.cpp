@@ -1,4 +1,4 @@
-#include "RuntimeOsgbLoaderThreadPool"
+#include "OsgbLoaderThreadPool"
 #include "../Thread/DataCleanThread"
 #include "../Thread/LODTreeUpdateThread"
 #include "../Thread/ShaderCompileThread"
@@ -144,11 +144,11 @@ bool FileReadTaskQueue::Empty()
 class ThreadPoolManager
 {
 public:
-	ThreadPoolManager(RuntimeOsgbLoaderThreadPool* pThreadPool) :
+	ThreadPoolManager(OsgbLoaderThreadPool* pThreadPool) :
 		_pThreadPool(pThreadPool) {}
 
 	std::mutex _managerMutex;
-	RuntimeOsgbLoaderThreadPool* _pThreadPool;
+	OsgbLoaderThreadPool* _pThreadPool;
 
 	void RequestPrepareNextFrame();
 	void RequestCleanModel(Model* model);
@@ -328,7 +328,7 @@ bool ThreadPoolManager::ReturnToPoolOrGetNewTask(ShaderCompileThread* pThread)
 
 #pragma endregion
 
-RuntimeOsgbLoaderThreadPool::RuntimeOsgbLoaderThreadPool(std::string rootDir, 
+OsgbLoaderThreadPool::OsgbLoaderThreadPool(std::string rootDir, 
 	uint32 numLODTreeUpdateThread, uint32 numDataCleanThread, uint32 numFileReadThread, uint32 numShaderCompileThread) :
 	_numLODTreeUpdateThread(numLODTreeUpdateThread),
 	_numDataCleanThread(numDataCleanThread),
@@ -343,7 +343,7 @@ RuntimeOsgbLoaderThreadPool::RuntimeOsgbLoaderThreadPool(std::string rootDir,
 	_pThreadPoolManager = new ThreadPoolManager(this);
 }
 
-RuntimeOsgbLoaderThreadPool::~RuntimeOsgbLoaderThreadPool()
+OsgbLoaderThreadPool::~OsgbLoaderThreadPool()
 {
 	FPlatformProcess::ReturnSynchEventToPool(_pStartEvent);
 	_pStartEvent = nullptr;
@@ -353,7 +353,7 @@ RuntimeOsgbLoaderThreadPool::~RuntimeOsgbLoaderThreadPool()
 	delete _pThreadPoolManager;
 }
 
-bool RuntimeOsgbLoaderThreadPool::Create()
+bool OsgbLoaderThreadPool::Create()
 {
 	for (uint32 i = 0; i < _numLODTreeUpdateThread; i++)
 	{
@@ -387,7 +387,7 @@ bool RuntimeOsgbLoaderThreadPool::Create()
 	return true;
 }
 
-void RuntimeOsgbLoaderThreadPool::Destroy()
+void OsgbLoaderThreadPool::Destroy()
 {
 	_pStartEvent->Trigger();
 	_gameThreadPauseEvent->Trigger();
@@ -418,27 +418,27 @@ void RuntimeOsgbLoaderThreadPool::Destroy()
 	_ShaderCompileThreadPool.clear();
 }
 
-void RuntimeOsgbLoaderThreadPool::RequestPrepareNextFrame()
+void OsgbLoaderThreadPool::RequestPrepareNextFrame()
 {
 	_pThreadPoolManager->RequestPrepareNextFrame();
 }
 
-void RuntimeOsgbLoaderThreadPool::RequestCleanModel(Model* model)
+void OsgbLoaderThreadPool::RequestCleanModel(Model* model)
 {
 	_pThreadPoolManager->RequestCleanModel(model);
 }
 
-void RuntimeOsgbLoaderThreadPool::RequestCompilePagedLOD(PagedLOD* plod)
+void OsgbLoaderThreadPool::RequestCompilePagedLOD(PagedLOD* plod)
 {
 	_pThreadPoolManager->RequestCompilePagedLOD(plod);
 }
 
-void RuntimeOsgbLoaderThreadPool::RequestNodeFile(FileReadTask* fileReadTask)
+void OsgbLoaderThreadPool::RequestNodeFile(FileReadTask* fileReadTask)
 {
 	_pThreadPoolManager->RequestNodeFile(fileReadTask);
 }
 
-FEvent* RuntimeOsgbLoaderThreadPool::Tick()
+FEvent* OsgbLoaderThreadPool::Tick()
 {
 	check(IsInGameThread());
 	for (Model* model : URuntimeMeshSubsystem::GetRuntimeMeshSubsystem()->GetModels())
@@ -450,14 +450,14 @@ FEvent* RuntimeOsgbLoaderThreadPool::Tick()
 	return _gameThreadPauseEvent;
 }
 
-void RuntimeOsgbLoaderThreadPool::ResumeGameThread()
+void OsgbLoaderThreadPool::ResumeGameThread()
 {
 	_gameThreadPauseEvent->Trigger();
 	/*std::unique_lock<std::mutex> lock(GameThreadWaitFor);
 	GameThreadResumeCondition.notify_all();*/
 }
 
-bool RuntimeOsgbLoaderThreadPool::ReturnToPoolOrGetNewTask(BaseThread* pThread)
+bool OsgbLoaderThreadPool::ReturnToPoolOrGetNewTask(BaseThread* pThread)
 {
 	if (dynamic_cast<LODTreeUpdateThread*>(pThread))
 	{

@@ -4,7 +4,7 @@
 // #include "OsgbLoaderThreadPool"
 #include "MyRuntimeMeshActor.h"
 #include "Pawn"
-#include "../ThreadPool/RuntimeOsgbLoaderThreadPool"
+#include "../ThreadPool/OsgbLoaderThreadPool"
 #include "../Thread/FileReadThread"
 #include "../Database/Model"
 #include "../Database/Geometry"
@@ -37,18 +37,18 @@ void URuntimeMeshSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	RuntimeMeshSubsystem = this;
 	_mRuntimeMeshActor = GetWorld()->SpawnActor<AMyRuntimeMeshActor>();
 
-	_databasePath = "F:\\meicheng\\osgb\\Data";
+	_databasePath = "F:\\FaultyChow\\terra_osgbs(2)\\terra_osgbs";
 
-	_RuntimeOsgbLoaderThreadPool = new RuntimeOsgbLoaderThreadPool(_databasePath);
-	_RuntimeOsgbLoaderThreadPool->Create();
+	_OsgbLoaderThreadPool = new OsgbLoaderThreadPool(_databasePath);
+	_OsgbLoaderThreadPool->Create();
 
 	SyncLoadOsgbModels(_databasePath);
 }
 
 void URuntimeMeshSubsystem::Deinitialize()
 {
-	_RuntimeOsgbLoaderThreadPool->Destroy();
-	delete _RuntimeOsgbLoaderThreadPool;
+	_OsgbLoaderThreadPool->Destroy();
+	delete _OsgbLoaderThreadPool;
 
 	for (Model* model : _models)
 		delete model;
@@ -57,7 +57,7 @@ void URuntimeMeshSubsystem::Deinitialize()
 void URuntimeMeshSubsystem::Tick(float deltaTime)
 {
 	Pawn::GetCurrentPawn()->Update(GetWorld());
-	_RuntimeOsgbLoaderThreadPool->Tick()->Wait();
+	_OsgbLoaderThreadPool->Tick()->Wait();
 	//std::unique_lock<std::mutex> lock(GameThreadWaitFor);
 	//GameThreadResumeCondition.wait(lock);
 }
@@ -134,12 +134,12 @@ void URuntimeMeshSubsystem::RemoveSection(MeshSection* meshSection)
 
 void URuntimeMeshSubsystem::RequestNodeFile(FileReadTask* fileReadTask)
 {
-	_RuntimeOsgbLoaderThreadPool->RequestNodeFile(fileReadTask);
+	_OsgbLoaderThreadPool->RequestNodeFile(fileReadTask);
 	// OsgbLoaderThreadPool::GetInstance()->ReadNodeFile(fileReadTask);
 }
 
 void URuntimeMeshSubsystem::RequestCompilePagedLOD(PagedLOD* plod)
 {
-	_RuntimeOsgbLoaderThreadPool->RequestCompilePagedLOD(plod);
+	_OsgbLoaderThreadPool->RequestCompilePagedLOD(plod);
 	// OsgbLoaderThreadPool::GetInstance()->FinishStructureAndMountToModel(plod);
 }

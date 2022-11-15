@@ -3,7 +3,7 @@
 #include "../Database/Geometry"
 #include "../Database/PagedLOD"
 #include "../Instance/Pawn"
-#include "../ThreadPool/RuntimeOsgbLoaderThreadPool"
+#include "../ThreadPool/OsgbLoaderThreadPool"
 
 void ModelCleanTask::Execute()
 {
@@ -28,7 +28,7 @@ void ModelCleanTask::DFS_CleanLODTree(class PagedLOD* plod)
 		DFS_CleanLODTree(child);
 }
 
-DataCleanThread::DataCleanThread(RuntimeOsgbLoaderThreadPool* threadPool, FString threadName) :
+DataCleanThread::DataCleanThread(OsgbLoaderThreadPool* threadPool, FString threadName) :
 	TaskThread(threadPool, threadName)
 {
 }
@@ -36,7 +36,7 @@ DataCleanThread::DataCleanThread(RuntimeOsgbLoaderThreadPool* threadPool, FStrin
 bool DataCleanThread::ReturnToPool()
 {
 	check(_task == nullptr);
-	/*ModelCleanTask* newTask = dynamic_cast<RuntimeOsgbLoaderThreadPool*>(_pThreadPool)->GetCleanModelTask();
+	/*ModelCleanTask* newTask = dynamic_cast<OsgbLoaderThreadPool*>(_pThreadPool)->GetCleanModelTask();
 	if (newTask)
 	{
 		_task = newTask;

@@ -4,7 +4,7 @@
 #include "../Database/PagedLOD"
 #include "../Database/Geometry"
 #include "../Thread/FileReadThread"
-#include "../ThreadPool/RuntimeOsgbLoaderThreadPool"
+#include "../ThreadPool/OsgbLoaderThreadPool"
 
 void LODTreeUpdateTask::Execute()
 {
@@ -153,7 +153,7 @@ void LODTreeUpdateTask::Traverse(PagedLOD* plod)
 	}
 }
 
-LODTreeUpdateThread::LODTreeUpdateThread(RuntimeOsgbLoaderThreadPool* pThreadPool, FString threadName) :
+LODTreeUpdateThread::LODTreeUpdateThread(OsgbLoaderThreadPool* pThreadPool, FString threadName) :
 	TaskThread(pThreadPool, threadName)
 {
 }
@@ -178,7 +178,7 @@ uint32 LODTreeUpdateThread::Run()
 			check(_task);
 			_bFinish.store(false);
 			_task->Execute();
-			dynamic_cast<RuntimeOsgbLoaderThreadPool*>(_pThreadPool)->
+			dynamic_cast<OsgbLoaderThreadPool*>(_pThreadPool)->
 				RequestCleanModel(dynamic_cast<LODTreeUpdateTask*>(_task)->_model);
 			_bFinish.store(true);
 			delete _task;
@@ -191,7 +191,7 @@ uint32 LODTreeUpdateThread::Run()
 bool LODTreeUpdateThread::ReturnToPool()
 {
 	check(_task == nullptr);
-	/*LODTreeUpdateTask* newTask = dynamic_cast<RuntimeOsgbLoaderThreadPool*>(_pThreadPool)->GetLODTreeUpdateTask();
+	/*LODTreeUpdateTask* newTask = dynamic_cast<OsgbLoaderThreadPool*>(_pThreadPool)->GetLODTreeUpdateTask();
 	if (newTask)
 	{
 		_task = newTask;

@@ -20,7 +20,7 @@
 
 #ifdef _MSVC_LANG
 #if _MSVC_LANG < 201703L		// C++17
-OsgbLoaderThreadPool* OsgbLoaderThreadPool::Instance = nullptr;
+OsgbLoaderThreadPool_Deprecated* OsgbLoaderThreadPool_Deprecated::Instance = nullptr;
 #endif
 #endif
 
@@ -126,11 +126,11 @@ private:
 	virtual bool Init() override { return FRunnable::Init(); }
 	virtual uint32 Run() override
 	{
-		OsgbLoaderThreadPool::GetInstance()->WaitForStart();
+		OsgbLoaderThreadPool_Deprecated::GetInstance()->WaitForStart();
 		_bActive = true;
 		do
 		{
-			if (OsgbLoaderThreadPool::GetInstance()->ReturnToPool(this))
+			if (OsgbLoaderThreadPool_Deprecated::GetInstance()->ReturnToPool(this))
 			{
 				_bActive = false;
 				_pThread->Suspend(true);
@@ -139,7 +139,7 @@ private:
 			{
 				check(_model != nullptr);
 				Execute();
-				OsgbLoaderThreadPool::GetInstance()->CleanModel(_model);
+				OsgbLoaderThreadPool_Deprecated::GetInstance()->CleanModel(_model);
 				_model = nullptr;
 				_renderNextFrame.clear();
 				_UnuseableGeometries.clear();
@@ -357,11 +357,11 @@ private:
 	PRAGMA_DISABLE_OPTIMIZATION
 		virtual uint32 Run() override
 	{
-		OsgbLoaderThreadPool::GetInstance()->WaitForStart();
+		OsgbLoaderThreadPool_Deprecated::GetInstance()->WaitForStart();
 		// _bActive.exchange(true);
 		do
 		{
-			if (OsgbLoaderThreadPool::GetInstance()->ReturnToPool(this))
+			if (OsgbLoaderThreadPool_Deprecated::GetInstance()->ReturnToPool(this))
 			{
 				// UE_LOG(LogTemp, Warning, TEXT("Pause Clean thread"));
 				// _bActive.exchange(false);
@@ -442,12 +442,12 @@ class ReadThread : public FRunnable
 					meshSection->_texture = UTexture2D::CreateTransient(
 						meshSection->_cols, meshSection->_rows, PF_B8G8R8A8);
 					meshSection->_material = UMaterialInstanceDynamic::Create(
-						OsgbLoaderThreadPool::GetInstance()->GetDefaultMaterial(), OsgbLoaderThreadPool::GetInstance()->GetWorld(), NAME_None);
+						OsgbLoaderThreadPool_Deprecated::GetInstance()->GetDefaultMaterial(), OsgbLoaderThreadPool_Deprecated::GetInstance()->GetWorld(), NAME_None);
 					//meshSection->_material->SetTextureParameterValue("Param", meshSection->_texture);
 					URuntimeMeshSubsystem::GetRuntimeMeshSubsystem()->SetupMaterialSlot(meshSection);
 				}
 			}
-			OsgbLoaderThreadPool::GetInstance()->FinishStructureAndMountToModel(_newPagedLOD);
+			OsgbLoaderThreadPool_Deprecated::GetInstance()->FinishStructureAndMountToModel(_newPagedLOD);
 		}
 	private:
 		PagedLOD* _newPagedLOD;
@@ -502,10 +502,10 @@ private:
 	virtual uint32 Run() override
 	{
 		_bActive = false;
-		OsgbLoaderThreadPool::GetInstance()->WaitForStart();
+		OsgbLoaderThreadPool_Deprecated::GetInstance()->WaitForStart();
 		do
 		{
-			if (OsgbLoaderThreadPool::GetInstance()->ReturnToPool(this))
+			if (OsgbLoaderThreadPool_Deprecated::GetInstance()->ReturnToPool(this))
 			{
 				// _bActive = false;
 				_pThread->Suspend(true);
@@ -599,10 +599,10 @@ private:
 	virtual uint32 Run() override
 	{
 		_bActive = false;
-		OsgbLoaderThreadPool::GetInstance()->WaitForStart();
+		OsgbLoaderThreadPool_Deprecated::GetInstance()->WaitForStart();
 		do
 		{
-			if (OsgbLoaderThreadPool::GetInstance()->ReturnToPool(this))
+			if (OsgbLoaderThreadPool_Deprecated::GetInstance()->ReturnToPool(this))
 			{
 				//_bActive = false;
 				_pThread->Suspend(true);
@@ -638,7 +638,7 @@ private:
 							{
 								meshSection->_texture->UpdateResource();
 								meshSection->_material->SetTextureParameterValue("Param", meshSection->_texture);
-								// OsgbLoaderThreadPool::GetInstance()->GetRuntimeMeshActor()->SetupMaterialSlot(meshSection);
+								// OsgbLoaderThreadPool_Deprecated::GetInstance()->GetRuntimeMeshActor()->SetupMaterialSlot(meshSection);
 							}
 						}
 						check(plod->_parent);
@@ -646,7 +646,7 @@ private:
 					},
 					TStatId(), nullptr, ENamedThreads::GameThread);
 #endif
-				// OsgbLoaderThreadPool::GetInstance()->GetODSCManager()->AddThreadedRequest(materialsToCompile, EShaderPlatform::SP_PCD3D_SM5, true);
+				// OsgbLoaderThreadPool_Deprecated::GetInstance()->GetODSCManager()->AddThreadedRequest(materialsToCompile, EShaderPlatform::SP_PCD3D_SM5, true);
 #if ENGINE_MAJOR_VERSION == 4
 				check(_plod->_parent);
 				_plod->_parent->AddChild(_plod->_index, _plod);
@@ -673,17 +673,17 @@ private:
 	PagedLOD* _plod;
 };
 
-OsgbLoaderThreadPool* OsgbLoaderThreadPool::GetInstance()
+OsgbLoaderThreadPool_Deprecated* OsgbLoaderThreadPool_Deprecated::GetInstance()
 {
 	return Instance;
 }
 
-UWorld* OsgbLoaderThreadPool::GetWorld()
+UWorld* OsgbLoaderThreadPool_Deprecated::GetWorld()
 {
 	return Instance->_runtimeMeshSubsystem->GetWorld();
 }
 
-OsgbLoaderThreadPool::OsgbLoaderThreadPool(URuntimeMeshSubsystem* runtimeMeshSubsystem) :
+OsgbLoaderThreadPool_Deprecated::OsgbLoaderThreadPool_Deprecated(URuntimeMeshSubsystem* runtimeMeshSubsystem) :
 	_runtimeMeshSubsystem(runtimeMeshSubsystem)
 {
 #if ENGINE_MAJOR_VERSION >= 4 && ENGINE_MINOR_VERSION >= 27
@@ -691,7 +691,7 @@ OsgbLoaderThreadPool::OsgbLoaderThreadPool(URuntimeMeshSubsystem* runtimeMeshSub
 #endif
 }
 
-OsgbLoaderThreadPool::~OsgbLoaderThreadPool()
+OsgbLoaderThreadPool_Deprecated::~OsgbLoaderThreadPool_Deprecated()
 {
 	_fileReadRequestQueue.Clear();
 	_waitToMountPlods.Empty();
@@ -701,7 +701,7 @@ OsgbLoaderThreadPool::~OsgbLoaderThreadPool()
 	_models.clear();
 }
 
-void OsgbLoaderThreadPool::LoadModels()
+void OsgbLoaderThreadPool_Deprecated::LoadModels()
 {
 	long long handle = 0;
 	struct _finddata_t fileinfo;
@@ -724,7 +724,7 @@ void OsgbLoaderThreadPool::LoadModels()
 	_findclose(handle);
 }
 
-bool OsgbLoaderThreadPool::Create(int32 numUpdateThreads, int32 numReadThreads, int32 numStructureThreads, int32 numCleanThreads)
+bool OsgbLoaderThreadPool_Deprecated::Create(int32 numUpdateThreads, int32 numReadThreads, int32 numStructureThreads, int32 numCleanThreads)
 {
 	if (Instance == nullptr)
 		return false;
@@ -767,7 +767,7 @@ bool OsgbLoaderThreadPool::Create(int32 numUpdateThreads, int32 numReadThreads, 
 	}
 }
 
-void OsgbLoaderThreadPool::Destroy()
+void OsgbLoaderThreadPool_Deprecated::Destroy()
 {
 	for (int i = 0; i < Instance->_numUpdateThreads; i++)
 	{
@@ -800,7 +800,7 @@ void OsgbLoaderThreadPool::Destroy()
 	Instance->_cleanThreads.clear();
 }
 
-void OsgbLoaderThreadPool::FileReadTaskQueue::Enqueue(FileReadTask*& request)
+void OsgbLoaderThreadPool_Deprecated::FileReadTaskQueue::Enqueue(FileReadTask*& request)
 {
 	std::unique_lock<std::mutex> lock(_requestMutex);
 	if (request->_bAllowLoad == false) return;
@@ -824,7 +824,7 @@ void OsgbLoaderThreadPool::FileReadTaskQueue::Enqueue(FileReadTask*& request)
 	}
 }
 
-bool OsgbLoaderThreadPool::FileReadTaskQueue::Dequeue(FileReadTask*& request)
+bool OsgbLoaderThreadPool_Deprecated::FileReadTaskQueue::Dequeue(FileReadTask*& request)
 {
 	std::unique_lock<std::mutex> lock(_requestMutex);
 
@@ -861,20 +861,20 @@ bool OsgbLoaderThreadPool::FileReadTaskQueue::Dequeue(FileReadTask*& request)
 	return true;
 }
 
-void OsgbLoaderThreadPool::FileReadTaskQueue::Clear()
+void OsgbLoaderThreadPool_Deprecated::FileReadTaskQueue::Clear()
 {
 	_requestOnce.clear();
 	_requestRepeatedly.clear();
 }
 
-void OsgbLoaderThreadPool::UpdateView()
+void OsgbLoaderThreadPool_Deprecated::UpdateView()
 {
 	check(IsInGameThread());
 	for (Model* model : _models)
 		model->UpdateGeometries();
 }
 
-void OsgbLoaderThreadPool::DrawUpNextFrame()
+void OsgbLoaderThreadPool_Deprecated::DrawUpNextFrame()
 {
 	_updateModelIndex = 0;
 	_drawUpComplete = 0;
@@ -883,7 +883,7 @@ void OsgbLoaderThreadPool::DrawUpNextFrame()
 		thread->WakeUp();
 }
 
-bool OsgbLoaderThreadPool::ReturnToPool(UpdateThread* pThread)
+bool OsgbLoaderThreadPool_Deprecated::ReturnToPool(UpdateThread* pThread)
 {
 	if (_drawUpComplete.load() == _numUpdateThreads)
 		return true;
@@ -918,7 +918,7 @@ bool OsgbLoaderThreadPool::ReturnToPool(UpdateThread* pThread)
 	}
 }
 
-void OsgbLoaderThreadPool::CleanModel(Model* model)
+void OsgbLoaderThreadPool_Deprecated::CleanModel(Model* model)
 {
 	std::unique_lock<std::mutex> lock(_cleanMutex);
 	/*for (CleanThread* pCleanThread : _cleanThreads)
@@ -943,7 +943,7 @@ NoNeedForPush:
 			pCleanThread->WakeUp();
 	}
 }
-bool OsgbLoaderThreadPool::ReturnToPool(CleanThread* pThread)
+bool OsgbLoaderThreadPool_Deprecated::ReturnToPool(CleanThread* pThread)
 {
 	check(pThread);
 	std::unique_lock<std::mutex> lock(_cleanMutex);
@@ -959,7 +959,7 @@ bool OsgbLoaderThreadPool::ReturnToPool(CleanThread* pThread)
 	}
 }
 
-void OsgbLoaderThreadPool::FinishStructureAndMountToModel(PagedLOD* plod)
+void OsgbLoaderThreadPool_Deprecated::FinishStructureAndMountToModel(PagedLOD* plod)
 {
 	_waitToMountPlods.Enqueue(plod);
 	for (StructureThread* pThread : _structureThread)
@@ -967,7 +967,7 @@ void OsgbLoaderThreadPool::FinishStructureAndMountToModel(PagedLOD* plod)
 			//ReturnToPool(pThread);
 			pThread->WakeUp();
 }
-bool OsgbLoaderThreadPool::ReturnToPool(StructureThread* pThread)
+bool OsgbLoaderThreadPool_Deprecated::ReturnToPool(StructureThread* pThread)
 {
 	check(pThread);
 	if (_waitToMountPlods.IsEmpty())
@@ -982,7 +982,7 @@ bool OsgbLoaderThreadPool::ReturnToPool(StructureThread* pThread)
 	}
 }
 
-void OsgbLoaderThreadPool::ReadNodeFile(FileReadTask* fileReadRequest)
+void OsgbLoaderThreadPool_Deprecated::ReadNodeFile(FileReadTask* fileReadRequest)
 {
 	_fileReadRequestQueue.Enqueue(fileReadRequest);
 	for (ReadThread* _pThread : _readThreads)
@@ -992,7 +992,7 @@ void OsgbLoaderThreadPool::ReadNodeFile(FileReadTask* fileReadRequest)
 			_pThread->WakeUp();
 	}
 }
-bool OsgbLoaderThreadPool::ReturnToPool(ReadThread* pThread)
+bool OsgbLoaderThreadPool_Deprecated::ReturnToPool(ReadThread* pThread)
 {
 	check(pThread);
 	FileReadTask* fileReadRequest = nullptr;
@@ -1006,23 +1006,23 @@ bool OsgbLoaderThreadPool::ReturnToPool(ReadThread* pThread)
 		return true;
 }
 
-UMaterialInterface* OsgbLoaderThreadPool::GetDefaultMaterial()
+UMaterialInterface* OsgbLoaderThreadPool_Deprecated::GetDefaultMaterial()
 {
 	return _runtimeMeshSubsystem->GetDefaultMaterial();
 }
 
-//AMyRuntimeMeshActor* OsgbLoaderThreadPool::GetRuntimeMeshActor()
+//AMyRuntimeMeshActor* OsgbLoaderThreadPool_Deprecated::GetRuntimeMeshActor()
 //{
 //	return _runtimeMeshSubsystem->getMyRuntimeMeshActor();
 //}
 
-void OsgbLoaderThreadPool::WaitForStart()
+void OsgbLoaderThreadPool_Deprecated::WaitForStart()
 {
 	std::unique_lock <std::mutex> lock(_initializeMutex);
 	_initializeCondition.wait(lock);
 }
 
-void OsgbLoaderThreadPool::CleanView()
+void OsgbLoaderThreadPool_Deprecated::CleanView()
 {
 	for (Model* model : _models)
 	{

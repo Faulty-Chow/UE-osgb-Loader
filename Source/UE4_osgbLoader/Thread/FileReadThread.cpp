@@ -2,7 +2,7 @@
 #include "../Database/NodeVisitor"
 #include "../Database/PagedLOD"
 #include "../Database/Geometry"
-#include "../ThreadPool/RuntimeOsgbLoaderThreadPool"
+#include "../ThreadPool/OsgbLoaderThreadPool"
 #include "../Instance/RuntimeMeshSubsystem.h"
 
 #include <osgDB/ReadFile>
@@ -71,7 +71,7 @@ void FileReadTask::Execute()
 	}
 }
 
-FileReadThread::FileReadThread(RuntimeOsgbLoaderThreadPool* pThreadPool, FString threadName) :
+FileReadThread::FileReadThread(OsgbLoaderThreadPool* pThreadPool, FString threadName) :
 	TaskThread(pThreadPool, threadName)
 {
 }
@@ -79,7 +79,7 @@ FileReadThread::FileReadThread(RuntimeOsgbLoaderThreadPool* pThreadPool, FString
 bool FileReadThread::ReturnToPool()
 {
 	check(_task == nullptr);
-	/*FileReadTask* newTask = dynamic_cast<RuntimeOsgbLoaderThreadPool*>(_pThreadPool)->GetFileReadTask();
+	/*FileReadTask* newTask = dynamic_cast<OsgbLoaderThreadPool*>(_pThreadPool)->GetFileReadTask();
 	if (newTask)
 	{
 		_task = newTask;

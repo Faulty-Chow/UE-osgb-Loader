@@ -27,7 +27,7 @@ private:
 class LODTreeUpdateThread final :public TaskThread
 {
 public:
-	LODTreeUpdateThread(class RuntimeOsgbLoaderThreadPool* pThreadPool, FString threadName);
+	LODTreeUpdateThread(class OsgbLoaderThreadPool* pThreadPool, FString threadName);
 
 private:
 	virtual uint32 Run() override;

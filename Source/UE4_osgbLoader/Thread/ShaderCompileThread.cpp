@@ -3,7 +3,7 @@
 #include "../Database/PagedLOD"
 #include "../Database/Geometry"
 #include "../Database/Model"
-#include "../ThreadPool/RuntimeOsgbLoaderThreadPool"
+#include "../ThreadPool/OsgbLoaderThreadPool"
 
 //void ShaderCompileThread::Tick()
 //{
@@ -71,7 +71,7 @@ void ShaderCompileTask::Execute()
 #endif
 }
 
-ShaderCompileThread::ShaderCompileThread(RuntimeOsgbLoaderThreadPool* pThreadPool, FString threadName) :
+ShaderCompileThread::ShaderCompileThread(OsgbLoaderThreadPool* pThreadPool, FString threadName) :
 	TaskThread(pThreadPool, threadName)/*, FSingleThreadRunnable()*/
 {
 }
@@ -79,7 +79,7 @@ ShaderCompileThread::ShaderCompileThread(RuntimeOsgbLoaderThreadPool* pThreadPoo
 bool ShaderCompileThread::ReturnToPool()
 {
 	check(_task == nullptr);
-	/*ShaderCompileTask* newTask = dynamic_cast<RuntimeOsgbLoaderThreadPool*>(_pThreadPool)->GetShaderCompileTask();
+	/*ShaderCompileTask* newTask = dynamic_cast<OsgbLoaderThreadPool*>(_pThreadPool)->GetShaderCompileTask();
 	if (newTask)
 	{
 		_task = newTask;

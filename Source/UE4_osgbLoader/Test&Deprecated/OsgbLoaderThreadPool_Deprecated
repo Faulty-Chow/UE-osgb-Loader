@@ -26,10 +26,10 @@ class AMyRuntimeMeshActor;
 class FODSCManager;
 #endif
 
-class OsgbLoaderThreadPool
+class OsgbLoaderThreadPool_Deprecated
 {
 public:
-	static OsgbLoaderThreadPool* GetInstance();
+	static OsgbLoaderThreadPool_Deprecated* GetInstance();
 	UWorld* GetWorld();
 	UMaterialInterface* GetDefaultMaterial();
 	// AMyRuntimeMeshActor* GetRuntimeMeshActor();
@@ -53,13 +53,13 @@ public:
 
 private:
 	friend class URuntimeMeshSubsystem;
-	OsgbLoaderThreadPool(URuntimeMeshSubsystem* runtimeMeshSubsystem);
-	~OsgbLoaderThreadPool();
+	OsgbLoaderThreadPool_Deprecated(URuntimeMeshSubsystem* runtimeMeshSubsystem);
+	~OsgbLoaderThreadPool_Deprecated();
 #ifdef _MSVC_LANG
 #if _MSVC_LANG >= 201703L		// C++17
-	static inline OsgbLoaderThreadPool* Instance = nullptr;
+	static inline OsgbLoaderThreadPool_Deprecated* Instance = nullptr;
 #else
-	static OsgbLoaderThreadPool* Instance;
+	static OsgbLoaderThreadPool_Deprecated* Instance;
 #endif
 #endif
 	

@@ -26,7 +26,7 @@ class FileReadThread :public TaskThread
 {
 	friend class FileReadTask;
 public:
-	FileReadThread(class RuntimeOsgbLoaderThreadPool* pThreadPool, FString threadName);
+	FileReadThread(class OsgbLoaderThreadPool* pThreadPool, FString threadName);
 
 private:
 	virtual bool ReturnToPool() override;

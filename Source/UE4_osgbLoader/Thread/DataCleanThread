@@ -23,7 +23,7 @@ private:
 class DataCleanThread final :public TaskThread
 {
 public:
-	DataCleanThread(class RuntimeOsgbLoaderThreadPool* threadPool, FString threadName);
+	DataCleanThread(class OsgbLoaderThreadPool* threadPool, FString threadName);
 
 private:
 	virtual bool ReturnToPool() override;
