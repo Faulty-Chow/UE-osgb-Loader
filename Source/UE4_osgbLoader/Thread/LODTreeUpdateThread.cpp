@@ -5,14 +5,11 @@
 #include "../Database/Geometry"
 #include "../Thread/FileReadThread"
 #include "../ThreadPool/OsgbLoaderThreadPool"
+#include "Viewport.h"
 
 void LODTreeUpdateTask::Execute()
 {
 	check(_model);
-	check(Pawn::GetCurrentPawn()->IsVaild());
-
-	check(_model->_addToViewList.empty());
-	check(_model->_removeFromViewList.empty());
 
 	Traverse(_model->_root);
 	while (!_UnuseableGeometries.empty())
@@ -97,7 +94,9 @@ void LODTreeUpdateTask::Traverse(PagedLOD* plod)
 		float pixelInSize = Pawn::GetCurrentPawn()->GetBoundPixelSizeOnView(geometry->_boundingSphere);
 		bool bCulling = false;
 		if (USE_FrustumCulling)
+		{
 			bCulling = !Pawn::GetCurrentPawn()->IsBoundOnView(geometry->_boundingSphere);
+		}
 		else
 			bCulling = false;
 		if (!bCulling)

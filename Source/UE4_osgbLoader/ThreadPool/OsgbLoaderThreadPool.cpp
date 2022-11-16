@@ -9,6 +9,7 @@
 #include "../Database/NodeVisitor"
 #include "../Instance/Pawn"
 #include "../Instance/RuntimeMeshSubsystem.h"
+#include "Viewport.h"
 
 #include <osgDB/ReadFile>
 

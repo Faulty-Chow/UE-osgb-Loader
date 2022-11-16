@@ -21,7 +21,9 @@ public class UE4_osgbLoader : ModuleRules
             "ProceduralMeshComponent"
         });
 
-        PrivateDependencyModuleNames.AddRange(new string[] { });
+        PrivateDependencyModuleNames.AddRange(new string[] 
+        {
+        });
 
         PublicIncludePaths.AddRange(new string[] {
             "C:\\Users\\Administrator\\Documents\\OpenSceneGraph-3.6.5\\include",

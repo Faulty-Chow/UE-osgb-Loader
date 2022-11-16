@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "RuntimeMeshSubsystem.h"
-// #include "OsgbLoaderThreadPool"
+#include "Viewport.h"
 #include "MyRuntimeMeshActor.h"
 #include "Pawn"
 #include "../ThreadPool/OsgbLoaderThreadPool"
@@ -24,7 +24,7 @@ URuntimeMeshSubsystem* URuntimeMeshSubsystem::RuntimeMeshSubsystem = nullptr;
 
 void URuntimeMeshSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
-	UTexture2D* temp = UTexture2D::CreateTransient(1, 1, PF_B8G8R8A8);
+	/*UTexture2D* temp = UTexture2D::CreateTransient(1, 1, PF_B8G8R8A8);
 	uint8* MipData = static_cast<uint8*>(temp->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
 	for (int i = 0; i < 4; i++)
 	{
@@ -32,7 +32,7 @@ void URuntimeMeshSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		MipData++;
 	}
 	temp->PlatformData->Mips[0].BulkData.Unlock();
-	temp->UpdateResource();
+	temp->UpdateResource();*/
 
 	RuntimeMeshSubsystem = this;
 	_mRuntimeMeshActor = GetWorld()->SpawnActor<AMyRuntimeMeshActor>();

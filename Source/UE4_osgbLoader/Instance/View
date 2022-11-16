@@ -1,0 +1,26 @@
+//#pragma once
+//
+//#include "CoreMinimal.h"
+//#include "SceneView.h"
+//
+//#include <osg/BoundingSphere>
+//
+//class View
+//{
+//	friend class ANonRuntimeMeshActor;
+//public:
+//	static View* GetActiveViewport() { return _ActiveViewport; }
+//	__forceinline int64 GetFrameNumber() { return _frameNumber; }
+//	float GetBoundPixelSizeOnView(const osg::BoundingSphere& boundingSphere, bool bABS = true) const;
+//	bool IsBoundOnView(const osg::BoundingSphere& boundingSphere) const;
+//	float DistanceToViewpoint(const osg::BoundingSphere& boundingSphere) const;
+//
+//private:
+//	void Tick();
+//
+//private:
+//	static View* _ActiveViewport;
+//	int64 _frameNumber;
+//	FViewMatrices* _viewMatrices;
+//	FIntRect* _unconstrainedViewRect;
+//};

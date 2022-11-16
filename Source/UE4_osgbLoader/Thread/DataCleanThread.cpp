@@ -8,7 +8,6 @@
 void ModelCleanTask::Execute()
 {
 	check(_model);
-	// check(Pawn::GetCurrentPawn()->IsVaild());
 	_frameNumber = Pawn::GetCurrentPawn()->GetFrameNumber();
 	DFS_CleanLODTree(_model->_root);
 }
